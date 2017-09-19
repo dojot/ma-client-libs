@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\protocol">
+      <UniqueIdentifier>{43325601-6f01-44f8-be8f-ee08c7c6349d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\protocol">
+      <UniqueIdentifier>{cb5ecead-9f8f-4733-abd4-6147bd79f32b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\encoder">
+      <UniqueIdentifier>{f4314731-d37d-498c-aede-274255007c6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\encoder">
+      <UniqueIdentifier>{0cee32ed-3554-4ebf-84fa-77e7fe771b0d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\protocol\communication.c">
+      <Filter>Source Files\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="src\protocol\protocol.c">
+      <Filter>Source Files\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\authenticator.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\encKdcRepPart.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\encryptedData.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\encTicketPart.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\replyAP.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\replyAS.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\requestAP.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\requestAS.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\secure-util.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\sessionKey.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\encoder\ticket.c">
+      <Filter>Source Files\encoder</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\protocol\protocol.h">
+      <Filter>Header Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\protocol\communication.h">
+      <Filter>Header Files\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\authenticator.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\constants.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\encKdcRepPart.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\encryptedData.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\encTicketPart.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\errno.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\replyAP.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\replyAS.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\requestAP.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\requestAS.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\secure-util.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\sessionKey.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\encoder\ticket.h">
+      <Filter>Header Files\encoder</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

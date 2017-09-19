@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\symmetric">
+      <UniqueIdentifier>{558a673a-c525-4b2c-a9da-fad96853e6a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\mode">
+      <UniqueIdentifier>{dcc06e1e-a24f-4887-8790-7a8ae9b624ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\symmetric">
+      <UniqueIdentifier>{d7223429-a1af-48fc-8f8b-56fc9cd35248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\mode">
+      <UniqueIdentifier>{8f2d8c98-38fd-4e32-90d3-d8532c05eb39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{10776173-b0d0-4faa-aeee-e978e17b0644}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{a41d6e0a-c9ae-430f-ac58-5394ada17731}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\padding">
+      <UniqueIdentifier>{da407df2-f95b-4925-a837-ab2e176251e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\padding">
+      <UniqueIdentifier>{11cef9de-e631-49aa-b57b-0d10936cede9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\mac">
+      <UniqueIdentifier>{899e48f1-2f8a-465f-ad9d-dac8faeb78cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\mac">
+      <UniqueIdentifier>{0995bd2a-1d83-4582-9a55-8b72d1518daf}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="symmetric\aes.c">
+      <Filter>Source Files\symmetric</Filter>
+    </ClCompile>
+    <ClCompile Include="mode\ctr.c">
+      <Filter>Source Files\mode</Filter>
+    </ClCompile>
+    <ClCompile Include="mode\ecb.c">
+      <Filter>Source Files\mode</Filter>
+    </ClCompile>
+    <ClCompile Include="util\cryptoutil.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="padding\pkcs7padding.c">
+      <Filter>Source Files\padding</Filter>
+    </ClCompile>
+    <ClCompile Include="padding\nullpadding.c">
+      <Filter>Source Files\padding</Filter>
+    </ClCompile>
+    <ClCompile Include="mode\gcm.c">
+      <Filter>Source Files\mode</Filter>
+    </ClCompile>
+    <ClCompile Include="mac\ghash.c">
+      <Filter>Source Files\mac</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\secureutil.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="symmetric\aes.h">
+      <Filter>Header Files\symmetric</Filter>
+    </ClInclude>
+    <ClInclude Include="mode\ctr.h">
+      <Filter>Header Files\mode</Filter>
+    </ClInclude>
+    <ClInclude Include="mode\ecb.h">
+      <Filter>Header Files\mode</Filter>
+    </ClInclude>
+    <ClInclude Include="util\cryptoutil.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="padding\padding.h">
+      <Filter>Header Files\padding</Filter>
+    </ClInclude>
+    <ClInclude Include="padding\pkcs7padding.h">
+      <Filter>Header Files\padding</Filter>
+    </ClInclude>
+    <ClInclude Include="util\codes.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="padding\nullpadding.h">
+      <Filter>Header Files\padding</Filter>
+    </ClInclude>
+    <ClInclude Include="mode\gcm.h">
+      <Filter>Header Files\mode</Filter>
+    </ClInclude>
+    <ClInclude Include="mac\ghash.h">
+      <Filter>Header Files\mac</Filter>
+    </ClInclude>
+    <ClInclude Include="util\errno.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\secureutil.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
