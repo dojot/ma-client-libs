@@ -41,7 +41,7 @@ FAIL:
 	return result;
 }
 
-errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_t* encodedLength)
+errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_t* encodedLength, uint8_t* sessionId, size_t sessionIdLength)
 {
 	errno_t result;
 	uint8_t *encodedTicket, *encodedEncryptedData;
@@ -71,14 +71,26 @@ errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_
 
 	/* Copy serialized fields to output */
 	*encodedLength = MESSAGE_CODE_LENGTH + encodedEncryptedDataLength + encodedTicketLength;
+	*encodedLength = *encodedLength + sessionIdLength;
 	*encodedOutput = (uint8_t*) malloc(*encodedLength);
 	if(*encodedOutput == NULL) {
 		result = INVALID_STATE;
 		goto FAIL;
 	}
 	
+	uint8_t u;
+	int i_i;
+	printf("SessionId: ");
+    for(i_i = 0; i_i < sessionIdLength; i_i++){
+        u = *((uint8_t*)sessionId + (sizeof(uint8_t) * i_i));
+        printf("%02x", u);
+    }
+    printf("\n");
+    
 	offset = 0;
-	**encodedOutput = REQUEST_AP_CODE;
+	memcpy(*encodedOutput, sessionId, sessionIdLength);
+	offset += sessionIdLength;
+	*(*encodedOutput + offset) = REQUEST_AP_CODE;
 	offset += MESSAGE_CODE_LENGTH;
 	memcpy(*encodedOutput + offset, encodedTicket, encodedTicketLength);
 	offset += encodedTicketLength;
@@ -86,6 +98,9 @@ errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_
 	offset += encodedEncryptedDataLength;
 
 	result = SUCCESSFULL_OPERATION;
+	
+	printf("encodedLength = %d\n", *encodedLength);
+
 FAIL:
 	return result;
 }

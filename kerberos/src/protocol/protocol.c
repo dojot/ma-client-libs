@@ -352,7 +352,7 @@ errno_t doRequestAP(uint8_t** encodedOutput, size_t* encodedLength)
 		goto FAIL;
 	}
 	
-	result = getEncodedRequestAP(&requestAP, encodedOutput, encodedLength);
+	result = getEncodedRequestAP(&requestAP, encodedOutput, encodedLength, kerberosCtx.sessionId, SESSION_ID_LENGTH);
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
 	}
@@ -371,6 +371,26 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	EncryptedData encData;
 	size_t cnameLength;
 	uint8_t *cname;
+	
+	/* Store sessionId */
+	if(encodedLength < SESSION_ID_LENGTH){
+	    printf("encodedLenght < SESSION_ID_LENGTH");
+	    goto FAIL;
+	}
+	memcpy(kerberosCtx.sessionId, encodedInput, SESSION_ID_LENGTH * sizeof(uint8_t));
+	
+	uint8_t u;
+	int i_i;
+	printf("SessionId: ");
+    for(i_i = 0; i_i < SESSION_ID_LENGTH; i_i++){
+        u = *((uint8_t*)kerberosCtx.sessionId + (sizeof(uint8_t) * i_i));
+        printf("%02x", u);
+    }
+    printf("\n");
+	
+	/* Modify encodedInput to ignore sessionId */
+	encodedInput = encodedInput + (SESSION_ID_LENGTH * sizeof(uint8_t));
+	encodedLength = encodedLength - SESSION_ID_LENGTH;
 	
 	result = setEncodedReplyAS(&replyAS, encodedInput, encodedLength, &offset);
 	if(result != SUCCESSFULL_OPERATION){

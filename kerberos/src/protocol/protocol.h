@@ -30,6 +30,8 @@ typedef enum {
 #define TAG_LEN			16
 #define SECURE_CHANNEL_OK	0
 #define SECURE_CHANNEL_FAILED	1
+#define SESSION_ID_LENGTH 32
+
 
 /* All the necessary information to establish a secure channel is kept in the Kerberos context */
 typedef struct 
@@ -49,6 +51,7 @@ typedef struct
 	uint8_t timestamp[TIME_LENGTH];
 	uint8_t offset[TIME_LENGTH];
 	errno_t errorCode;
+	uint8_t sessionId[SESSION_ID_LENGTH]    /*The session information generated after RequestAS*/
 } KerberosContext;
 
 /* Executes the full Kerberos handshake */

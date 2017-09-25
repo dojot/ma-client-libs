@@ -14,7 +14,7 @@ typedef struct {
 
 errno_t encodeRequestAP(RequestAP* /* requestAp */, Ticket* /* ticket */, EncryptedData* /* encryptedData */);
 
-errno_t getEncodedRequestAP(RequestAP* /* requestAp */, uint8_t** /* encodedOutput */, size_t* /* encodedLength */);
+errno_t getEncodedRequestAP(RequestAP* /* requestAp */, uint8_t** /* encodedOutput */, size_t* /* encodedLength */, uint8_t* /* sessionId */, size_t /* sessionIdLength */);
 
 errno_t setEncodedRequestAP(RequestAP* /* requestAp */, uint8_t* /* encodedInput */, size_t /* encodedLength */, size_t* /* offset */);
 
