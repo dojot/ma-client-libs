@@ -203,7 +203,7 @@ SUCCESS:
         return result;
 }
 
-errno_t encryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* plaintext, uint32_t plaintextLength, uint8_t** ciphertext, uint32_t* ciphertextLength)
+errno_t encryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* plaintext, uint32_t plaintextLength, uint8_t** ciphertext, size_t* ciphertextLength)
 {
 	errno_t result;
 	int i;
@@ -263,7 +263,7 @@ SUCCESS:
 	return result;
 }
 	
-errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_t ciphertextLength, uint8_t** plaintext, uint32_t* plaintextLength)
+errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_t ciphertextLength, uint8_t** plaintext, size_t* plaintextLength)
 {
 	uint8_t *output;
 	uint32_t outputLength, outputOffset = 0;
@@ -271,7 +271,6 @@ errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_
 
 	result = initReadChannel();
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("initReadChannel failed\n");
 		goto FAIL;
 	}
 	
@@ -281,7 +280,6 @@ errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_
 	output = (uint8_t*) malloc(sizeof(uint8_t) * outputLength);
 	if(output == NULL && outputLength != 0) {
 		result = INVALID_STATE;
-		printf("malloc failed\n");
 		goto FAIL;
 	}
 	
@@ -289,7 +287,6 @@ errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_
 	if(aad != NULL && aadLength > 0) {
 		result = gcmUpdateAAD(&readChannel, aad, aadLength, 0);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("gcmUpdateAAD failed\n");
 			goto FAIL_FREE;
 		}
 	}
@@ -297,13 +294,11 @@ errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_
 	/* Decrypts the ciphertext and removes the tag */
 	result = gcmFinal(&readChannel, ciphertext, ciphertextLength, 0, output, outputLength, &outputOffset);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("gcmFinal failed\n");
 		goto FAIL_FREE;
 	}
 	
 	result = resize_s(&output, outputLength, outputOffset);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("resize_s failed\n");
 		goto FAIL_FREE;
 	}
 	

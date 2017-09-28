@@ -1,5 +1,4 @@
 #include "gcm.h"
-#include <stdio.h>
 
 errno_t gcmInit(gcm_ctx_st* ctx, uint8_t blockSize, uint8_t dir, uint8_t *nonce, 
 	uint32_t nonceLength, uint8_t tagSize, void* blockCipherCtx, errno_t blockCipher(const uint8_t*, uint8_t *, void*))
@@ -201,19 +200,16 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 
 	result = gcmCheckContext(ctx);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("gcmCheckContext failed\n");
 		goto FAIL;
 	}
 	
 	if(output == NULL || outputOffset == NULL) {
 		result = INVALID_PARAMETER;
-		printf("output or outputOffset null\n");
 		goto FAIL;
 	}
 	
 	if(ctx->dir == DIR_DECRYPTION && (inputLen < ctx->tagSize || input == NULL)) {
 		result = INVALID_PARAMETER;
-		printf("input null failed\n");
 		goto FAIL;	
 	}
 	
@@ -229,7 +225,6 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 	if(input != NULL) {
 		result = ctrFinal(&ctx->ctr_ctx, input, inputLen, inputOffset, output, outputLen, outputOffset);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("ctrFinal failed\n");
 			goto FAIL;
 		}
 	}
@@ -239,7 +234,6 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 	tag = (uint8_t*)malloc(sizeof(uint8_t) * ctx->blockSize);
 	if(tag == NULL) {
 		result = INVALID_STATE;
-		printf("malloc failed\n");
 		goto FAIL;
 	}
 	
@@ -247,12 +241,10 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 		/* Finish the ghash calculation */
 		result = ghashUpdate(&ctx->ghash_ctx, output + outputOffsetBefore, outputOffsetAfter - outputOffsetBefore, FALSE);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("ghashUpdate failed\n");
 			goto FAIL_CLEAN;
 		}
 		result = ghashFinal(&ctx->ghash_ctx, tag, ctx->blockSize, &tagOffset);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("ghashFinal failed\n");
 			goto FAIL_CLEAN;
 		}
 		
@@ -260,12 +252,10 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 		/* Finish the ghash calculation */
 		result = ghashUpdate(&ctx->ghash_ctx, input + inputOffset, inputLen, FALSE);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("ghashUpdate2 failed\n");
 			goto FAIL_CLEAN;
 		}
 		result = ghashFinal(&ctx->ghash_ctx, tag, ctx->blockSize, &tagOffset);
 		if(result != SUCCESSFULL_OPERATION) {
-		    printf("ghashFinal2 failed\n");
 			goto FAIL_CLEAN;
 		}
 	}
@@ -277,20 +267,7 @@ errno_t gcmFinal(gcm_ctx_st* ctx, const uint8_t* input, uint32_t inputLen, uint3
 	/* Verifying the tag */
 	if(ctx->dir == DIR_DECRYPTION) {
 		if(compareArrayToArrayDiffConstant(tag, ctx->tagSize, input + inputOffset + inputLen, ctx->tagSize) != 0x00) {
-		    printf("ctx->tagSize = %d\n", ctx->tagSize);
-		    printf("inputOffset = %d\n", inputOffset);
-		    printf("tagA: ");
-		    for(i = 0; i < ctx->tagSize; i++){
-		        printf("%02x", *(tag + i));
-		    }
-		    printf("\ntagB: ");
-		    for(i = 0; i < ctx->tagSize; i++){
-		        printf("%02x", *(input + inputOffset + i));
-		    }
-		    printf("\n");
-		    
 			result = INVALID_TAG;
-			printf("compareArrayToArrayDiffConstant failed\n");
 			goto FAIL_CLEAN;
 		}
 	/* Add tag to the output */

@@ -77,15 +77,6 @@ errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_
 		result = INVALID_STATE;
 		goto FAIL;
 	}
-	
-	uint8_t u;
-	int i_i;
-	printf("SessionId: ");
-    for(i_i = 0; i_i < sessionIdLength; i_i++){
-        u = *((uint8_t*)sessionId + (sizeof(uint8_t) * i_i));
-        printf("%02x", u);
-    }
-    printf("\n");
     
 	offset = 0;
 	memcpy(*encodedOutput, sessionId, sessionIdLength);
@@ -98,8 +89,6 @@ errno_t getEncodedRequestAP(RequestAP* requestAp, uint8_t** encodedOutput, size_
 	offset += encodedEncryptedDataLength;
 
 	result = SUCCESSFULL_OPERATION;
-	
-	printf("encodedLength = %d\n", *encodedLength);
 
 FAIL:
 	return result;

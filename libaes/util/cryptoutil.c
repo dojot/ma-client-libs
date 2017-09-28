@@ -1,4 +1,5 @@
 #include "cryptoutil.h"
+
 /**
 * Cryptographic utility functions.
 * 
@@ -211,9 +212,11 @@ uint8_t* HexStrToCharArray(const uint8_t* hexStr, uint32_t length) {
 	uint8_t value[2], b;
 	uint8_t i;
 
-	if (length % 2 != 0)
+	if (length % 2 != 0){
 		/* Invalid hexadecimal uint8_t string */
+		free(out);
 		return NULL;
+	}
 	
 	for (i = 0; i < length; i += 2) {
 		value[0] = hexStr[i];
@@ -314,12 +317,10 @@ uint8_t compareArrayToArrayDiffConstant(const uint8_t* arr, uint32_t lenA, const
 		uint8_t i;
 
 		if (lenA == lenB) {
-		    printf("lenA == lenB\n");
 			for (i = 0; i < lenA; i++) {
 				res |= (arrB[i] ^ arr[i]);
 			}
 		} else {
-		    printf("lenA != lenB\n");
 			res = 0x01;
 		}
 		return res;

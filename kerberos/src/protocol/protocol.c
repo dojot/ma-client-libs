@@ -220,7 +220,6 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
-			printf("*** sending message\n");
 			goNextState();
 			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAS); 
 			
@@ -232,20 +231,16 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 		case WAIT_REPLY_AS:
 			result = verifyReplyAS(encodedInput, encodedInputLength);
 			if(result != SUCCESSFULL_OPERATION) {
-			    printf("*** replyAS failed\n");
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
-			printf("*** replyAS OK\n");
-			printf("*** encoding requestAP\n");
 			result = doRequestAP(&encodedOutput, &encodedOutputLength);
 			if(result != SUCCESSFULL_OPERATION) {
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
-			printf("*** sending message\n");
 			goNextState();
 			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAP); 
 			
@@ -256,16 +251,12 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 		 * to be established and ready to send_message and receive data which must be protected.
 		 */
 		case WAIT_REPLY_AP:
-		    printf("*** state is WAIT_REPLY_AP\n");
-		    printf("*** verifying replyAP\n");
 			result = verifyReplyAP(encodedInput, encodedInputLength);
 			if(result != SUCCESSFULL_OPERATION) {
-			    printf("*** replyAP failed\n");
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
-			printf("*** replyAP OK\n");
 			goNextState();
 			kerberosCtx.callback(SECURE_CHANNEL_OK);
 			break;
@@ -374,19 +365,12 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	
 	/* Store sessionId */
 	if(encodedLength < SESSION_ID_LENGTH){
-	    printf("encodedLenght < SESSION_ID_LENGTH");
+	    result = 1;
 	    goto FAIL;
 	}
 	memcpy(kerberosCtx.sessionId, encodedInput, SESSION_ID_LENGTH * sizeof(uint8_t));
 	
 	uint8_t u;
-	int i_i;
-	printf("SessionId: ");
-    for(i_i = 0; i_i < SESSION_ID_LENGTH; i_i++){
-        u = *((uint8_t*)kerberosCtx.sessionId + (sizeof(uint8_t) * i_i));
-        printf("%02x", u);
-    }
-    printf("\n");
 	
 	/* Modify encodedInput to ignore sessionId */
 	encodedInput = encodedInput + (SESSION_ID_LENGTH * sizeof(uint8_t));
@@ -394,19 +378,16 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	
 	result = setEncodedReplyAS(&replyAS, encodedInput, encodedLength, &offset);
 	if(result != SUCCESSFULL_OPERATION){
-	    printf("setEncodedReplyAS failed\n");
 		goto FAIL;
 	}
 	
 	result = decodeReplyAS(&replyAS, &cname, &cnameLength, &kerberosCtx.ticket, &encData);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("decodeReplyAS failed\n");
 		goto FAIL;
 	}
 	
 	/* Check if the received cleartext cname match what was requested */
 	if(cnameLength != PRINCIPAL_NAME_LENGTH || memcmp(kerberosCtx.cname, cname, PRINCIPAL_NAME_LENGTH) != 0) {
-	    printf("Received cleartext cname does not match requested\n");
 		result = INVALID_PARAMETER;
 		goto FAIL;
 	}
@@ -417,31 +398,21 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	
 	result = decodeEncData(&encData, &iv, &ivLength, &ciphertext, &ciphertextLength);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("decodeEncData failed\n");
 		goto FAIL;
 	}
 	
 	/* It's used only for communication between this component and the Kerberos AS */
 	result = initSecureChannel(SHARED_KEY_LENGTH, ivLength, TAG_LEN, kerberosCtx.sharedKey, kerberosCtx.sharedKey, iv, iv);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("initSecureChannel failed\n");
 		goto FAIL;
 	}
 	
 	/* Properly decrypts the encrypted part of the replyAS */
 	uint8_t* decEncKdcRep;
-	size_t decEncKdcRepLength;
-	
-	int i = 0;
-	for(i = 0; i < ciphertextLength; i++){
-	    printf("%x", *(ciphertext + i));
-	}
-	printf("\n");
-	    
+	size_t decEncKdcRepLength;	    
 	
 	result = decryptTo(NULL, 0, ciphertext, ciphertextLength, &decEncKdcRep, &decEncKdcRepLength);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("decryptTo failed\n");
 		goto FAIL;
 	}
 	
@@ -452,27 +423,23 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	
 	result = setEncodedEncKdcPart(&EncKdcPart, decEncKdcRep, decEncKdcRepLength, &offset);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("setEncodedEncKdcPart failed\n");
 		goto FAIL;
 	}
 	
 	result = decodeEncKdcPart(&EncKdcPart, &kerberosCtx.sessionKeys, &snameObt, &snameObtLength,
 			&nonceObt, &nonceObtLength, &authObt, &authObtLength, &endObt, &endObtTime);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("decodeEncKdcPart failed\n");
 		goto FAIL;
 	}
 	
 	/* Check if nonce is equal to the nonce that was sent */
 	if(nonceObtLength != NONCE_LENGTH || memcmp(kerberosCtx.nonce, nonceObt, NONCE_LENGTH) != 0) {
-	    printf("nonce is not equal to the nonce that was sent\n");
 		result = INVALID_PARAMETER;
 		goto FAIL;
 	}
 	
 	/* Check if snames are equal */
 	if(snameObtLength != PRINCIPAL_NAME_LENGTH || memcmp(kerberosCtx.sname, snameObt, PRINCIPAL_NAME_LENGTH) != 0) {
-	    printf("snames are not equal\n");
 		result = INVALID_PARAMETER;
 		goto FAIL;
 	}

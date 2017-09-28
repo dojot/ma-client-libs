@@ -75,6 +75,9 @@ errno_t setEncodedReplyAP(ReplyAP* replyAp, uint8_t* encodedInput,  size_t encod
 	/* Decode the encrypted data field */
 	result = setEncodedEncData(&replyAp->encData, encodedInput + *offset, encodedLength - *offset, &encLength);
 	*offset += encLength;
+	if(result != SUCCESSFULL_OPERATION){
+	    goto FAIL;
+	}
 
 FAIL:
 	return result;

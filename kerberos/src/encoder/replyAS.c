@@ -4,7 +4,6 @@
 
 errno_t encodeReplyAS(ReplyAS* replyAS, uint8_t* cname, size_t cnameLength, Ticket* ticket, EncryptedData* encPart)
 {
-    printf("encodeReplyAS\n");
 	errno_t result;
 	
 	/* Input validation */
@@ -53,7 +52,6 @@ FAIL:
 
 errno_t getEncodedReplyAS(ReplyAS* replyAS, uint8_t** encodedOutput, size_t* encodedLength)
 {
-    printf("getEncodedReplyAS\n");
 	errno_t result;
 	uint8_t *encodedTicket, *encodedData;
 	size_t offset, encodedTicketLength, encodedDataLength; 
@@ -112,13 +110,11 @@ FAIL:
 /* Generates ReplyAS from encoded input */
 errno_t setEncodedReplyAS(ReplyAS* replyAS, uint8_t* encodedInput, size_t encodedLength, size_t* offset)
 {
-    printf("setEncodedReplyAS\n");
 	errno_t result;
 	size_t encodedOffset, length;
 
 	/* Input validation */
 	if(replyAS == NULL || encodedInput == NULL) {
-	    printf("input validation failed\n");
 		result = INVALID_PARAMETER;
 		goto FAIL;
 	}
@@ -126,7 +122,6 @@ errno_t setEncodedReplyAS(ReplyAS* replyAS, uint8_t* encodedInput, size_t encode
 	/* Check if encodedInput has at least enough bytes to encoded 2 principal names */
 	if(encodedLength < 2 * PRINCIPAL_NAME_LENGTH) {
 		result = INVALID_PARAMETER;
-		printf("encodedInput does not have enough bytes\n");
 		goto FAIL;
 	}
 	
@@ -134,7 +129,6 @@ errno_t setEncodedReplyAS(ReplyAS* replyAS, uint8_t* encodedInput, size_t encode
 	encodedOffset = 0;
 	if(*encodedInput != REPLY_AS_CODE) {
 		result = INVALID_PARAMETER;
-		printf("Unserialization 1 failed\n");
 		goto FAIL;
 	}
 	encodedOffset += MESSAGE_CODE_LENGTH;
@@ -144,14 +138,12 @@ errno_t setEncodedReplyAS(ReplyAS* replyAS, uint8_t* encodedInput, size_t encode
 	result = setEncodedTicket(&replyAS->ticket, encodedInput + encodedOffset, encodedLength - encodedOffset, &length);
 	encodedOffset += length;
 	if(result != SUCCESSFULL_OPERATION || encodedOffset > encodedLength) {
-	    printf("Unserialization 2 failed\n");
 		goto FAIL;
 	}
 
 	result = setEncodedEncData(&replyAS->encPart, encodedInput + encodedOffset,  encodedLength - encodedOffset, &length);
 	encodedOffset += length;
 	if(result != SUCCESSFULL_OPERATION || encodedOffset > encodedLength) {
-	    printf("Unserialization 3 failed\n");
 		goto FAIL;
 	}
 
@@ -163,7 +155,6 @@ FAIL:
 
 errno_t decodeReplyAS(ReplyAS* replyAS, uint8_t** cname, size_t* cnameLength, Ticket* ticket, EncryptedData* encPart)
 {
-    printf("decodeReplyAS\n");
 	errno_t result;
 
 	/* Input validation */
@@ -180,7 +171,7 @@ errno_t decodeReplyAS(ReplyAS* replyAS, uint8_t** cname, size_t* cnameLength, Ti
 	
 	/* Copy individual fields */
 	*cname = (uint8_t*) malloc(sizeof(replyAS->cname));
-	if(cname == NULL) {
+	if(*cname == NULL) {
 		result = INVALID_STATE;
 		goto FAIL;
 	}
@@ -208,7 +199,6 @@ SUCCESS:
 
 errno_t checkReplyAS(ReplyAS* replyAs) 
 {
-    printf("checkReplyAS\n");
 	errno_t result;
 
 	/* Input validation */
@@ -238,7 +228,6 @@ FAIL:
 
 errno_t eraseReplyAS(ReplyAS* replyAS)
 {
-    printf("eraseReplyAS\n");
 	errno_t result;
 
 	result = checkReplyAS(replyAS);

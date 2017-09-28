@@ -117,7 +117,7 @@ errno_t setEncodedEncData(EncryptedData* encryptedData, uint8_t* encodedInput, s
 	/* Secure remove of any previous information */
         result = memset_s(encryptedData, sizeof(EncryptedData), 0, sizeof(EncryptedData));
         if(result != SUCCESSFULL_OPERATION) {
-                goto FAIL;
+            goto FAIL;
         }
 	/* Unserialization */
         encodedOffset = 0;

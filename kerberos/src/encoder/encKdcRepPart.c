@@ -97,36 +97,32 @@ errno_t setEncodedEncKdcPart(EncKdcPart* encKdcPart, uint8_t* encodedInput, size
 	/* Input validation */
 	if(encKdcPart == NULL || encodedInput == NULL) {
 		result = INVALID_PARAMETER;
-		printf("Input validatiion failed\n");
 		goto FAIL;
 	}
 
 	/* Check if encoded data has at least enough size to store the sname, times and lengths of session keys */
 	if(encodedLength < PRINCIPAL_NAME_LENGTH + 2 * TIME_LENGTH + 2 * sizeof(uint8_t)) {
 		result = INVALID_PARAMETER;
-		printf("encoded data len failed\n");
 		goto FAIL;
 	}	
 
 	/* Secure remove any previous information */
 	result = memset_s(encKdcPart, sizeof(EncKdcPart), 0, sizeof(EncKdcPart));
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("memset_s failed\n");
 		goto FAIL;
 	}
 	/* Unserialization */
 	encOffset = 0;
 	result = setEncodedSessionKeys(&encKdcPart->sk, encodedInput, encodedLength, &sessionKeyOffset);
 	if(result != SUCCESSFULL_OPERATION) {
-	    printf("setEncodedSessionKeys failed\n");
 		goto FAIL;
 	}
 	encOffset += sessionKeyOffset;
 	
 	/* Check if encoded input has the correct size */
-	if(encOffset + 2 * TIME_LENGTH + PRINCIPAL_NAME_LENGTH + NONCE_LENGTH != encodedLength) {
+	size_t totalLength = encOffset + 2 * TIME_LENGTH + PRINCIPAL_NAME_LENGTH + NONCE_LENGTH;
+	if(totalLength != encodedLength) {
 		result = INVALID_PARAMETER;
-		printf("encoded input size failed\n");
 		goto FAIL;
 	}
 
