@@ -14,10 +14,10 @@ size_t receive_reply(void *ptr, size_t size, size_t nmemb, void *stream){
  * Sends binary data to the Kerberos service.
  * Upon receipt of a reply, the callback method specified in loader.addEventListener is called
  */
-void send_message(uint8_t* encodedInput, size_t encodedLength, char* host, char* path)
+void send_message(uint8_t* encodedInput, size_t encodedLength, uint8_t* host, uint8_t* path)
 {
     CURLcode res;
-    size_t urlLen = strlen(host) + strlen(path);
+    size_t urlLen = strlen((char*)host) + strlen((char*)path);
     char* url = (char*) malloc(sizeof(char) * (urlLen + 1));
     if(url == NULL){
         return;

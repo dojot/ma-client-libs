@@ -30,7 +30,8 @@ errno_t initKerberosURIs(uint8_t* host, uint8_t hostLength, uint8_t* uriRequestA
 		result = INVALID_STATE;
 		goto FAIL;
 	}
-	strcpy(kerberosCtx.host, host);
+	//strcpy(kerberosCtx.host, host);
+	memcpy(kerberosCtx.host, host, hostLength);
 	
 	/* Initializes the rest address of the request AS. */
 	kerberosCtx.uriRequestAS = malloc(sizeof(uint8_t) * (requestASLength + 1));
@@ -38,7 +39,8 @@ errno_t initKerberosURIs(uint8_t* host, uint8_t hostLength, uint8_t* uriRequestA
 		result = INVALID_STATE;
 		goto FAIL;
 	}
-	strcpy(kerberosCtx.uriRequestAS, uriRequestAS);
+	//strcpy(kerberosCtx.uriRequestAS, uriRequestAS);
+	memcpy(kerberosCtx.uriRequestAS, uriRequestAS, requestASLength);
 	
 	/* Initializes the rest address of the request AP. */
 	kerberosCtx.uriRequestAP = malloc(sizeof(uint8_t) * (requestAPLength + 1));
@@ -46,7 +48,8 @@ errno_t initKerberosURIs(uint8_t* host, uint8_t hostLength, uint8_t* uriRequestA
 		result = INVALID_STATE;
 		goto FAIL;
 	}
-	strcpy(kerberosCtx.uriRequestAP, uriRequestAP);
+	//strcpy(kerberosCtx.uriRequestAP, uriRequestAP);
+	memcpy(kerberosCtx.uriRequestAP, uriRequestAP, requestAPLength);
 	result = SUCCESSFULL_OPERATION;
 	goto SUCCESS;
 
@@ -92,6 +95,7 @@ FAIL:
 errno_t executeKerberosHandshake()
 {
 	processState(NULL, 0);
+	return 0;
 }
 
 /* Initializes the Kerberos context */
@@ -214,6 +218,7 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 	{
 		/* Secure channel not yet initialized. Creates a requestAS and send_message it to the kerberos server */
 		case NOT_INITIALIZED:
+		    printf("\nCreating requestAS\n");
 			result = doRequestAS(&encodedOutput, &encodedOutputLength);
 			if(result != SUCCESSFULL_OPERATION) {
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
@@ -221,6 +226,7 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 				break;
 			}
 			goNextState();
+			printf("\nSending requestAS\n");
 			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAS); 
 			
 			break;
@@ -229,12 +235,14 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 		 * This states expects to receive a valid reply AS and then send_messages a requestAP.
          */
 		case WAIT_REPLY_AS:
+		    printf("\nReplyAS received. Verifying data received ...\n");
 			result = verifyReplyAS(encodedInput, encodedInputLength);
 			if(result != SUCCESSFULL_OPERATION) {
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
+			printf("\nReplyAS verified. Creating requestAP\n");
 			result = doRequestAP(&encodedOutput, &encodedOutputLength);
 			if(result != SUCCESSFULL_OPERATION) {
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
@@ -242,6 +250,7 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 				break;
 			}
 			goNextState();
+			printf("\nSending requestAP\n");
 			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAP); 
 			
 			break;
@@ -251,12 +260,14 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 		 * to be established and ready to send_message and receive data which must be protected.
 		 */
 		case WAIT_REPLY_AP:
+		    printf("\nReplyAP received. Verifying data received\n");
 			result = verifyReplyAP(encodedInput, encodedInputLength);
 			if(result != SUCCESSFULL_OPERATION) {
 				kerberosCtx.callback(SECURE_CHANNEL_FAILED);
 				kerberosCtx.state = NOT_INITIALIZED;
 				break;
 			}
+			printf("\nReplyAP verified\n");
 			goNextState();
 			kerberosCtx.callback(SECURE_CHANNEL_OK);
 			break;
@@ -281,6 +292,21 @@ errno_t doRequestAS(uint8_t** encodedOutput, size_t* encodedLength)
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
 	}
+	int i;
+	printf("RequestAS created:\n");
+	printf("  cname: ");
+	for(i = 0; i < strlen((char*)(requestAS.cname)); i++){
+	    printf("%02x", requestAS.cname[i]);
+	}
+	printf("\n  sname: ");
+	for(i = 0; i < strlen((char*)(requestAS.sname)); i++){
+	    printf("%02x", requestAS.sname[i]);
+	}
+	printf("\n  nonce: ");
+    for(i = 0; i < strlen((char*)(requestAS.nonce)); i++){
+	    printf("%02x", requestAS.nonce[i]);
+	}
+	printf("\n");
 
 	result = getEncodedRequestAS(&requestAS, encodedOutput, encodedLength);
 FAIL:
@@ -343,6 +369,31 @@ errno_t doRequestAP(uint8_t** encodedOutput, size_t* encodedLength)
 		goto FAIL;
 	}
 	
+	int i;
+	printf("RequestAP created:\n");
+	printf("  ticket sname: ");
+	for(i = 0; i < strlen(requestAP.ticket.sname); i++){
+	    printf("%02x", requestAP.ticket.sname[i]);
+	}
+	printf("\n  ticket iv: ");
+	for(i = 0; i < requestAP.ticket.encData.ivLength; i++){
+	    printf("%02x", requestAP.ticket.encData.iv[i]);
+	}
+	printf("\n  ticket ciphertext: ");
+	for(i = 0; i < requestAP.ticket.encData.ciphertextLength; i++){
+	    printf("%02x", requestAP.ticket.encData.ciphertext[i]);
+	}
+	
+	printf("\n  encryptedData iv: ");
+	for(i = 0; i < requestAP.encryptedData.ivLength; i++){
+	    printf("%02x", requestAP.encryptedData.iv[i]);
+	}
+	printf("\n  encryptedData ciphertext: ");
+	for(i = 0; i < requestAP.encryptedData.ciphertextLength; i++){
+	    printf("%02x", requestAP.encryptedData.ciphertext[i]);
+	}
+	printf("\n");
+	
 	result = getEncodedRequestAP(&requestAP, encodedOutput, encodedLength, kerberosCtx.sessionId, SESSION_ID_LENGTH);
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
@@ -370,8 +421,6 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	}
 	memcpy(kerberosCtx.sessionId, encodedInput, SESSION_ID_LENGTH * sizeof(uint8_t));
 	
-	uint8_t u;
-	
 	/* Modify encodedInput to ignore sessionId */
 	encodedInput = encodedInput + (SESSION_ID_LENGTH * sizeof(uint8_t));
 	encodedLength = encodedLength - SESSION_ID_LENGTH;
@@ -385,6 +434,35 @@ errno_t verifyReplyAS(uint8_t* encodedInput, size_t encodedLength)
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
 	}
+	
+	int i;
+	printf("ReplyAS received:\n");
+	printf("  cname: ");
+	for(i = 0; i < strlen((char*)replyAS.cname); i++){
+	    printf("%02x", replyAS.cname[i]);
+	}
+	printf("\n  ticket sname: ");
+	for(i = 0; i < strlen((char*)replyAS.ticket.sname); i++){
+	    printf("%02x", replyAS.ticket.sname[i]);
+	}
+	printf("\n  ticket iv: ");
+	for(i = 0; i < replyAS.ticket.encData.ivLength; i++){
+	    printf("%02x", replyAS.ticket.encData.iv[i]);
+	}
+	printf("\n  ticket ciphertext: ");
+	for(i = 0; i < replyAS.ticket.encData.ciphertextLength; i++){
+	    printf("%02x", replyAS.ticket.encData.ciphertext[i]);
+	}
+	
+	printf("\n  encPart iv: ");
+	for(i = 0; i < replyAS.encPart.ivLength; i++){
+	    printf("%02x", replyAS.encPart.iv[i]);
+	}
+	printf("\n  encPart ciphertext: ");
+	for(i = 0; i < replyAS.encPart.ciphertextLength; i++){
+	    printf("%02x", replyAS.encPart.ciphertext[i]);
+	}
+	printf("\n");
 	
 	/* Check if the received cleartext cname match what was requested */
 	if(cnameLength != PRINCIPAL_NAME_LENGTH || memcmp(kerberosCtx.cname, cname, PRINCIPAL_NAME_LENGTH) != 0) {
@@ -471,6 +549,18 @@ errno_t verifyReplyAP(uint8_t* encodedInput, size_t encodedLength)
 		goto FAIL;
 	}
 	
+	int i;
+	printf("ReplyAP received:\n");
+	printf("  encData iv: ");
+	for(i = 0; i < replyAP.encData.ivLength; i++){
+	    printf("%02x", replyAP.encData.iv[i]);
+	}
+	printf("\n  encPart ciphertext: ");
+	for(i = 0; i < replyAP.encData.ciphertextLength; i++){
+	    printf("%02x", replyAP.encData.ciphertext[i]);
+	}
+	printf("\n");
+	
 	if(offset != encodedLength) {
 		result = INVALID_PARAMETER;
 		goto FAIL;
@@ -490,6 +580,12 @@ errno_t verifyReplyAP(uint8_t* encodedInput, size_t encodedLength)
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
 	}
+	
+	printf("  timestamp decrypted: ");
+	for(i = 0; i < timestampLength; i++){
+	    printf("%02x", timestamp[i]);
+	}
+	printf("\n");
 	
 	/* Verify if timestamp equals timestamp on the authenticator */
 	if(timestampLength != TIME_LENGTH || memcmp(timestamp, kerberosCtx.timestamp, TIME_LENGTH) != 0) {

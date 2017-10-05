@@ -14,6 +14,6 @@
 /* Max http reply size, should be enough to exchange all the kerberos messages */
 #define MAX_HTTP_REPLY	1024
 
-void send_message(uint8_t* /* encodedInput */, size_t /* encodedLength */, char* /* host */, char* /* path */);
+void send_message(uint8_t* /* encodedInput */, size_t /* encodedLength */, uint8_t* /* host */, uint8_t* /* path */);
 
 #endif /* COMMUNICATION_H_ */

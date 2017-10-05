@@ -51,7 +51,7 @@ typedef struct
 	uint8_t timestamp[TIME_LENGTH];
 	uint8_t offset[TIME_LENGTH];
 	errno_t errorCode;
-	uint8_t sessionId[SESSION_ID_LENGTH]    /*The session information generated after RequestAS*/
+	uint8_t sessionId[SESSION_ID_LENGTH];    /*The session information generated after RequestAS*/
 } KerberosContext;
 
 /* Executes the full Kerberos handshake */
