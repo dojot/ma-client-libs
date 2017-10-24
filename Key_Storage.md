@@ -1,12 +1,12 @@
 # Secure Key storage
 
-The Application Key is received upon the application registration and grants access to the mutual authentication and crypto channel functions. After received, the key must be protected since it will be used to identify the application as legitimate. In order to do that, it is highly recomended that the application maintainer stores the key in an adequate way.
+The Application Key is received upon the application registration and grants access to the mutual authentication and crypto channel functions. After received, the key must be protected since it will be used to identify the application as legitimate. In order to do that, it is highly recommended that the application maintainer stores the key in an adequate way.
 
 This guide presents solutions and good practices to obtain a secure key storage.
 
 ## OWASP recomendations
 
-The [OWASP](https://www.owasp.org) is an organization focused in improving software security and have a [series of recomendations](https://www.owasp.org/index.php/Cryptographic_Storage_Cheat_Sheet) regarding cryptographic storage. In the case of key storage, some recomendations are:
+The [OWASP](https://www.owasp.org) is an organization focused on improving software security and has a [series of recomendations](https://www.owasp.org/index.php/Cryptographic_Storage_Cheat_Sheet) regarding cryptographic storage. In the case of key storage, some recomendations are:
 
 
 > Rule - Store unencrypted keys away from the encrypted data
