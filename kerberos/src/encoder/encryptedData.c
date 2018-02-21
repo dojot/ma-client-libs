@@ -107,7 +107,7 @@ errno_t setEncodedEncData(EncryptedData* encryptedData, uint8_t* encodedInput, s
 	 * Check if the length fields are valid:
 	 * encodedInput[0] == IVLength
 	 * encodedInput[1] == CiphertextLength
-         * So IVLen + CiphertextLen == encodedLength - 2
+     * So IVLen + CiphertextLen == encodedLength - 2
 	 */
 	if(encodedLength < 2 || encodedLength < 2 + encodedInput[0] + encodedInput[1]) {
 		result = INVALID_PARAMETER;
@@ -115,23 +115,24 @@ errno_t setEncodedEncData(EncryptedData* encryptedData, uint8_t* encodedInput, s
 	}
 
 	/* Secure remove of any previous information */
-        result = memset_s(encryptedData, sizeof(EncryptedData), 0, sizeof(EncryptedData));
-        if(result != SUCCESSFULL_OPERATION) {
-            goto FAIL;
-        }
+	result = memset_s(encryptedData, sizeof(EncryptedData), 0, sizeof(EncryptedData));
+	if(result != SUCCESSFULL_OPERATION) {
+		goto FAIL;
+	}
+
 	/* Unserialization */
-        encodedOffset = 0;
-        memcpy(&encryptedData->ivLength, encodedInput, sizeof(encryptedData->ivLength));
-        encodedOffset += sizeof(encryptedData->ivLength);
-        memcpy(&encryptedData->ciphertextLength, encodedInput + encodedOffset, sizeof(encryptedData->ciphertextLength));
-        encodedOffset += sizeof(encryptedData->ciphertextLength);
+	encodedOffset = 0;
+	memcpy(&encryptedData->ivLength, encodedInput, sizeof(encryptedData->ivLength));
+	encodedOffset += sizeof(encryptedData->ivLength);
+	memcpy(&encryptedData->ciphertextLength, encodedInput + encodedOffset, sizeof(encryptedData->ciphertextLength));
+	encodedOffset += sizeof(encryptedData->ciphertextLength);
 	encryptedData->iv = (uint8_t*) malloc(sizeof(uint8_t) * encryptedData->ivLength);
-        if(encryptedData->iv == NULL) {
+	if(encryptedData->iv == NULL) {
 		result = INVALID_STATE;
 		goto FAIL;
 	}
 	memcpy(encryptedData->iv, encodedInput + encodedOffset, sizeof(uint8_t) * encryptedData->ivLength);
-        encodedOffset += sizeof(uint8_t) * encryptedData->ivLength;
+	encodedOffset += sizeof(uint8_t) * encryptedData->ivLength;
 	
 	encryptedData->ciphertext = (uint8_t*) malloc(sizeof(uint8_t) * encryptedData->ciphertextLength);
 	if(encryptedData->ciphertext == NULL) {

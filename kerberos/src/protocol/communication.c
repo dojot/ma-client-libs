@@ -3,42 +3,117 @@
 #include <curl/curl.h>
 #include <stdio.h>
 
-size_t receive_reply(void *ptr, size_t size, size_t nmemb, void *stream){
-    size_t totalSize = size * nmemb;
+#define INITIAL_BUFFER_SIZE 1024
 
-    processReply(totalSize, (uint8_t*)ptr);
-    return totalSize;
+typedef struct SBufferStruct {
+  char *pData;
+  size_t size;
+} BufferStruct;
+
+size_t process_chuck(void *pContent, size_t size, size_t nmemb, void *pUserPtr) {
+    size_t realSize = size * nmemb;
+    BufferStruct *pBuffer = (BufferStruct *)pUserPtr;
+
+    // check if there is sufficient space in our buffer
+    if (pBuffer->size + realSize > INITIAL_BUFFER_SIZE) {
+    	pBuffer->pData = realloc(pBuffer->pData, pBuffer->size + realSize);
+		if(!pBuffer->pData) {
+		  // out of memory!
+		  printf("not enough memory (realloc returned NULL)\n");
+		  return 0;
+		}
+    }
+
+    // update the buffer's content and size
+    memcpy(&(pBuffer->pData[pBuffer->size]), pContent, realSize);
+    pBuffer->size += realSize;
+
+    return realSize;
 }
 
 /*
  * Sends binary data to the Kerberos service.
  * Upon receipt of a reply, the callback method specified in loader.addEventListener is called
  */
-void send_message(uint8_t* encodedInput, size_t encodedLength, uint8_t* host, uint8_t* path)
-{
+errno_t send_message(uint8_t* encodedInput,
+					 size_t encodedLength,
+					 uint8_t* host,
+					 uint8_t* path,
+					 uint8_t** pResponse,
+					 size_t* pResponseSize) {
     CURLcode res;
-    size_t urlLen = strlen((char*)host) + strlen((char*)path);
-    char* url = (char*) malloc(sizeof(char) * (urlLen + 1));
-    if(url == NULL){
-        return;
+    BufferStruct buffer;
+    uint8_t result = 0;
+    char* pUrl = NULL;
+    size_t urlLen = 0;
+    CURL *pCurlHandler = NULL;
+    struct curl_slist *pSlist = NULL;
+
+    // initialize output parameters
+	*pResponseSize = 0;
+	*pResponse = NULL;
+
+    // initialize the buffer with INITIAL_BUFFER_SIZE
+    buffer.size = 0;
+    buffer.pData = (char*) malloc(INITIAL_BUFFER_SIZE);
+    if (!buffer.pData) {
+    	goto FAIL;
     }
-    strcpy(url, host);
-    strcat(url, path);
 
-    CURL *curl = curl_easy_init();
-    if(!curl){
-        return;
+    // configure the URL: host + path
+    urlLen = strlen((char*)host) + strlen((char*)path);
+    pUrl = (char*) malloc(sizeof(char) * (urlLen + 1));
+    if(!pUrl){
+    	goto FAIL;
+    }
+    strcpy(pUrl, host);
+    strcat(pUrl, path);
+
+    // initialize the curl handler
+    pCurlHandler = curl_easy_init();
+    if(!pCurlHandler){
+    	goto FAIL;
     }
 
-    struct curl_slist *slist = NULL;
-    slist = curl_slist_append(slist, "Content-Type: application/x-www-form-urlencoded");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encodedInput);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receive_reply);
+    // prepare the request
+    pSlist = curl_slist_append(pSlist, "Content-Type: application/x-www-form-urlencoded");
+    curl_easy_setopt(pCurlHandler, CURLOPT_HTTPHEADER, pSlist);
+    curl_easy_setopt(pCurlHandler, CURLOPT_URL, pUrl);
+    curl_easy_setopt(pCurlHandler, CURLOPT_POSTFIELDSIZE, encodedLength);
+    curl_easy_setopt(pCurlHandler, CURLOPT_POSTFIELDS, encodedInput);
+    curl_easy_setopt(pCurlHandler, CURLOPT_WRITEFUNCTION, process_chuck);
+    curl_easy_setopt(pCurlHandler, CURLOPT_WRITEDATA, (void *)&buffer);
 
-    res = curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(slist);
+    res = curl_easy_perform(pCurlHandler);
+    if (res != CURLE_OK) {
+    	printf("send message failed: %s\n", curl_easy_strerror(res));
+    	goto FAIL;
+    } else {
+    	*pResponseSize = buffer.size;
+    	*pResponse = buffer.pData;
+    	goto SUCCESS;
+    }
 
+    FAIL:
+    	result = !SUCCESSFULL_OPERATION;
+    	if (buffer.pData) {
+    		free(buffer.pData);
+    	}
+    	goto CLEAN_UP;
+
+	SUCCESS:
+		result = SUCCESSFULL_OPERATION;
+
+	CLEAN_UP:
+		if (pCurlHandler) {
+			curl_easy_cleanup(pCurlHandler);
+		}
+		if (pSlist) {
+			curl_slist_free_all(pSlist);
+		}
+		if (pUrl) {
+			free(pUrl);
+		}
+
+    return result;
 }

@@ -167,12 +167,6 @@ void processError()
 void processReply(size_t encodedInputLength, uint8_t* encodedInput) 
 {
 	uint8_t isError;
-
-	/* If the reply is too big, then something must be wrong. */
-	if(encodedInputLength > MAX_HTTP_REPLY) {
-		kerberosCtx.state = NOT_INITIALIZED;
-		return;
-	}
 	
 	if(encodedInput == NULL) {
 		kerberosCtx.state = NOT_INITIALIZED;
@@ -201,6 +195,7 @@ void checkIfError(uint8_t* encodedInput, size_t encodedInputLength, uint8_t *isE
 		kerberosCtx.state = NOT_INITIALIZED;
 		decodeError(&error, &kerberosCtx.errorCode);
 		*isError = 1;
+		printf("An error has been occurred");
 	} else {
 		*isError = 0;
 	}
@@ -209,10 +204,14 @@ void checkIfError(uint8_t* encodedInput, size_t encodedInputLength, uint8_t *isE
 /* Upon receipt of a message, executes the action related to the current state */
 void processState(uint8_t* encodedInput, size_t encodedInputLength)
 {
-	errno_t result;
-	uint8_t *encodedOutput;
-	size_t encodedOutputLength;
+	errno_t result = 0;
+	uint8_t *encodedOutput = NULL;
+	size_t encodedOutputLength = 0;
+	uint8_t* pResponse = NULL;
+	size_t responseSize = 0;
 	
+	printf("ProcessState: %d\n", kerberosCtx.state);
+
 	/* State machine that represents client side of the kerberos protocol */
 	switch(kerberosCtx.state)
 	{
@@ -227,7 +226,16 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 			}
 			goNextState();
 			printf("\nSending requestAS\n");
-			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAS); 
+			result = send_message(encodedOutput,
+								  encodedOutputLength,
+								  kerberosCtx.host,
+								  kerberosCtx.uriRequestAS,
+								  &pResponse,
+								  &responseSize);
+			if (result == SUCCESSFULL_OPERATION) {
+			    processReply(responseSize, pResponse);
+			    free(pResponse);
+			}
 			
 			break;
 		/*
@@ -251,7 +259,16 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 			}
 			goNextState();
 			printf("\nSending requestAP\n");
-			send_message(encodedOutput, encodedOutputLength, kerberosCtx.host, kerberosCtx.uriRequestAP); 
+			result = send_message(encodedOutput,
+								  encodedOutputLength,
+								  kerberosCtx.host,
+								  kerberosCtx.uriRequestAP,
+								  &pResponse,
+								  &responseSize);
+			if (result == SUCCESSFULL_OPERATION) {
+			    processReply(responseSize, pResponse);
+			    free(pResponse);
+			}
 			
 			break;
 		/*
@@ -271,11 +288,13 @@ void processState(uint8_t* encodedInput, size_t encodedInputLength)
 			goNextState();
 			kerberosCtx.callback(SECURE_CHANNEL_OK);
 			break;
+		case ESTABLISHED_CHANNEL:
 		/* 
 		 * ESTABLISHED CHANNEL does not need to be handle here, because
 		 * it is impossible to processReply to get a message without it being
 		 * asked.
 		 */
+			break;
 	}
 	kerberosCtx.errorCode = result;
 }
@@ -339,7 +358,7 @@ errno_t doRequestAP(uint8_t** encodedOutput, size_t* encodedLength)
 	if(result != SUCCESSFULL_OPERATION) {
 		goto FAIL;
 	}
-	
+
 	/* Initializes the secure channel */
 	result = initSecureChannel(kerberosCtx.sessionKeys.keyLength, kerberosCtx.sessionKeys.ivLength, kerberosCtx.tagLen, 
 						kerberosCtx.sessionKeys.keyCS, kerberosCtx.sessionKeys.keySC, kerberosCtx.sessionKeys.ivCS,
@@ -609,6 +628,9 @@ void goNextState()
 			break;
 		case WAIT_REPLY_AP:
 			kerberosCtx.state = ESTABLISHED_CHANNEL;
+			break;
+		case ESTABLISHED_CHANNEL:
+			// do nothing
 			break;
 	}
 }
