@@ -162,3 +162,27 @@ FAIL:
 	return result;	
 }
 
+char* getErrorString(Error error) {
+	switch(error.errorCode) {
+		case KDC_ERR_C_PRINCIPAL_UNKNOWN:
+			return "Client not found in Kerberos database";
+		case KDC_ERR_S_PRINCIPAL_UNKNOWN:
+			return "Server not found in Kerberos database";
+		case KRB_AP_ERR_BAD_INTEGRITY:
+			return "Integrity check on decrypted field failed";
+		case KRB_AP_ERR_TKT_EXPIRED:
+			return "The ticket has expired";
+		case KRB_AP_ERR_REPEAT:
+			return "The request is a replay";
+		case KRB_AP_ERR_BADMATCH:
+			return "The ticket and authenticator do not match";
+		case KRB_AP_ERR_SKEW:
+			return "The clock skew is too great";
+		case KRB_ERR_GENERIC:
+			return "Generic error; the description is in the e-data field";
+		default:
+			return "Unexpected error code";
+	}
+	return "Unexpected error code";
+}
+

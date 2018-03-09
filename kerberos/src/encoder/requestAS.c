@@ -1,63 +1,57 @@
 #include "requestAS.h"
 #include <stdint.h>
 
-/* Fills the request */
-errno_t encodeRequestAS(RequestAS* requestAs, uint8_t* cname, size_t cnameLength, uint8_t* sname, size_t snameLength, uint8_t* nonce, size_t nonceLength)
-{
-	errno_t result;
+#include "ma_comm_error_codes.h"
+#include "logger/logger.h"
 
-	/* Input parameters validation */
-	if(requestAs == NULL || cname == NULL || sname == NULL || nonce == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+/* Fills the request */
+uint8_t encodeRequestAS(RequestAS* requestAs,
+						uint8_t* cname,
+						size_t cnameLength,
+						uint8_t* sname,
+						size_t snameLength,
+						uint8_t* nonce,
+						size_t nonceLength) {
+
+	// Input parameters validation
+	if(!requestAs || !cname || !sname || !nonce) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
 	if(cnameLength != PRINCIPAL_NAME_LENGTH || snameLength != PRINCIPAL_NAME_LENGTH) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+		return MA_COMM_INVALID_PARAMETER;
 	}
 	
-	/* Ensure structure is clean */
-	result = memset_s(requestAs, sizeof(RequestAS), 0, sizeof(RequestAS));
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
+	initRequestAS(requestAs);
 
 	memcpy(requestAs->cname, cname, sizeof(uint8_t) * cnameLength);
 	memcpy(requestAs->sname, sname, sizeof(uint8_t) * snameLength);
 	memcpy(requestAs->nonce, nonce, sizeof(uint8_t) * nonceLength);
-	result = checkRequestAS(requestAs);
-FAIL:
-	return result;
+
+	return MA_COMM_SUCCESS;
 }
 
 /* Generate byte array encodedOutput from requestAS */
-errno_t getEncodedRequestAS(RequestAS* requestAS, uint8_t** encodedOutput, size_t* encodedLength)
-{
-	errno_t result;
-	size_t encOffset;
+uint8_t getEncodedRequestAS(RequestAS* requestAS,
+							uint8_t** encodedOutput,
+							size_t* encodedLength) {
+	uint8_t result = 0;
+	size_t encOffset = 0;
 	
 	/* Input parameters validation */
-	result = checkRequestAS(requestAS);
-	if(result != SUCCESSFULL_OPERATION) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if ( (!requestAS) || (!encodedOutput) || (!encodedLength) ) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	if(encodedOutput == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	*encodedOutput = (uint8_t*) malloc(MESSAGE_CODE_LENGTH + sizeof(requestAS->cname) + sizeof(requestAS->sname) + sizeof(requestAS->nonce));
-
-	if(*encodedOutput == NULL) {
-		result = INVALID_STATE;
-		goto FAIL;
+	*encodedOutput = (uint8_t*) malloc(MESSAGE_CODE_LENGTH +
+								sizeof(requestAS->cname) +
+								sizeof(requestAS->sname) +
+								sizeof(requestAS->nonce));
+	if(!*encodedOutput) {
+		return MA_COMM_OUT_OF_MEMORY;
 	}
 
 	/* Serializes data to encodedOutput */
-	encOffset = 0;
 	**encodedOutput = REQUEST_AS_CODE;
 	encOffset += MESSAGE_CODE_LENGTH;
 	memcpy(*encodedOutput + encOffset, requestAS->cname, sizeof(requestAS->cname));
@@ -67,133 +61,59 @@ errno_t getEncodedRequestAS(RequestAS* requestAS, uint8_t** encodedOutput, size_
 	memcpy(*encodedOutput + encOffset, requestAS->nonce, sizeof(requestAS->nonce));
 	encOffset += sizeof(requestAS->nonce);
 	*encodedLength = encOffset;
-	result = SUCCESSFULL_OPERATION;
-FAIL:
-	return result;
-} 
 
-/* Generate requestAS from byte array encodedInput */
-errno_t setEncodedRequestAS(RequestAS* requestAS, uint8_t* encodedInput, size_t encodedLength, size_t* offset)
-{
-	errno_t result;
-	size_t encOffset;
-
-	/* Input parameters validation */
-	if(requestAS == NULL || encodedInput == NULL || offset == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-	
-	/* Check if encoded data has the correct size */
-	if(encodedLength != (MESSAGE_CODE_LENGTH + sizeof(requestAS->cname) + sizeof(requestAS->sname) + sizeof(requestAS->nonce))) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	/* Secure remove of any previous information */
-	result = memset_s(requestAS, sizeof(RequestAS), 0, sizeof(RequestAS));
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	/* Unserialization */
-	encOffset = 0;
-	if(*encodedInput != REQUEST_AS_CODE) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-	encOffset += MESSAGE_CODE_LENGTH;
-	memcpy(requestAS->cname, encodedInput + encOffset, sizeof(requestAS->cname));
-	encOffset += sizeof(requestAS->cname);
-	memcpy(requestAS->sname, encodedInput + encOffset, sizeof(requestAS->sname));
-	encOffset += sizeof(requestAS->sname);
-	memcpy(requestAS->nonce, encodedInput + encOffset, sizeof(requestAS->nonce));
-	encOffset += sizeof(requestAS->nonce);
-	result = checkRequestAS(requestAS);
-	*offset = encOffset;
-FAIL:
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-/* Get individual fields from the request */
-errno_t decodeRequestAS(RequestAS* requestAs, uint8_t** cname, size_t* cnameLength, uint8_t** sname, size_t* snameLength, uint8_t** nonce, size_t* nonceLength)
-{
-	errno_t result;
-
-	/* Input parameters validation */
-	result = checkRequestAS(requestAs);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+uint8_t initRequestAS(RequestAS* requestAs) {
+	if (!requestAs) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
+	memset(requestAs->cname, 0, PRINCIPAL_NAME_LENGTH);
+	memset(requestAs->sname, 0, PRINCIPAL_NAME_LENGTH);
+	memset(requestAs->nonce, 0, NONCE_LENGTH);
 
-	if(cname == NULL || sname == NULL || nonce == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-	
-	if(cnameLength == NULL || snameLength == NULL || nonceLength == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	*cname = (uint8_t*) malloc(sizeof(requestAs->cname));
-	*sname = (uint8_t*) malloc(sizeof(requestAs->sname));
-	*nonce = (uint8_t*) malloc(sizeof(requestAs->nonce));
-	if(*cname == NULL || *sname == NULL || *nonce == NULL) {
-		/* Resources must be freed only if an error occurs */
-		free(*cname);
-		free(*sname);
-		free(*nonce);
-		result = INVALID_STATE;
-		goto FAIL;
-	}
-	
-	*cnameLength = PRINCIPAL_NAME_LENGTH;
-	*snameLength = PRINCIPAL_NAME_LENGTH;
-	*nonceLength = NONCE_LENGTH;
-	
-	memcpy(*cname, requestAs->cname, sizeof(requestAs->cname));
-	memcpy(*sname, requestAs->sname, sizeof(requestAs->sname));
-	memcpy(*nonce, requestAs->nonce, sizeof(requestAs->nonce));
-	result = SUCCESSFULL_OPERATION;
-
-FAIL:
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-/* Check the existance of invalid fields inside request */
-errno_t checkRequestAS(RequestAS* requestAs)
-{
-	errno_t result;
-
-	if(requestAs == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-	result = SUCCESSFULL_OPERATION;
-FAIL:
-	return result;
-}
-
-errno_t eraseRequestAS(RequestAS* requestAs)
-{
-	errno_t result;
+uint8_t eraseRequestAS(RequestAS* requestAs) {
+	uint8_t result = MA_COMM_SUCCESS;
 
 	/* Input validation */
-	if(requestAs == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if(!requestAs) {
+		return INVALID_PARAMETER;
 	}
 
 	/* Secure erase */
 	result = memset_s(requestAs, sizeof(RequestAS), 0, sizeof(RequestAS));
-	if(result != SUCCESSFULL_OPERATION) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if(result != MA_COMM_SUCCESS) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	result = SUCCESSFULL_OPERATION;
-FAIL:
-	return result;	
+	return MA_COMM_SUCCESS;
+}
+
+void dumpRequestAS(RequestAS *requestAs, uint8_t indent) {
+	if ( (!requestAs) || (!logger_is_log_enabled()) ) {
+		return;
+	}
+
+	uint8_t i = 0;
+	LOG("%*sResquestAs:\n", indent, "");
+	LOG("%*scname: ", indent + 1, "");
+	for(i = 0; i < PRINCIPAL_NAME_LENGTH; ++i) {
+	    LOG("%02x", requestAs->cname[i]);
+	}
+	LOG("\n");
+	LOG("%*ssname: ", indent + 1, "");
+	for(i = 0; i < PRINCIPAL_NAME_LENGTH; ++i) {
+	    LOG("%02x", requestAs->sname[i]);
+	}
+	LOG("\n");
+	LOG("%*snonce: ", indent + 1, "");
+	for(i = 0; i < NONCE_LENGTH; ++i) {
+	    LOG("%02x", requestAs->nonce[i]);
+	}
+	LOG("\n");
 }
 

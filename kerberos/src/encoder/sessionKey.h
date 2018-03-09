@@ -31,4 +31,8 @@ errno_t checkSessionKeys(SessionKeys* /* sk */);
 errno_t eraseSessionKeys(SessionKeys* /* sk */);
 
 errno_t copySessionKeys(SessionKeys* /* src */, SessionKeys* /* dst */);
+
+uint8_t initSessionKeys(SessionKeys* sessionKeys);
+
+void dumpSessionKeys(SessionKeys* sessionKeys, uint8_t indent);
 #endif /* SESSION_KEY_ */

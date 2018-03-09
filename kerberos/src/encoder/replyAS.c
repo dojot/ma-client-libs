@@ -1,256 +1,119 @@
 #include "replyAS.h"
 
-#include <stdio.h>
-
-errno_t encodeReplyAS(ReplyAS* replyAS, uint8_t* cname, size_t cnameLength, Ticket* ticket, EncryptedData* encPart)
-{
-	errno_t result;
-	
-	/* Input validation */
-	if(replyAS == NULL || cname == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	if(cnameLength != PRINCIPAL_NAME_LENGTH) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	result = checkTicket(ticket);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	result = checkEncData(encPart);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	/* Ensure structure is clean */
-	result = memset_s(replyAS, sizeof(ReplyAS), 0, sizeof(ReplyAS));
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	/* Copy individual fields */	
-	memcpy(replyAS->cname, cname, cnameLength);
-	result = copyTicket(ticket, &replyAS->ticket);	
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-	
-	result = copyEncData(encPart, &replyAS->encPart);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-	
-	result = checkReplyAS(replyAS);
-FAIL:
-	return result;
-}
-
-errno_t getEncodedReplyAS(ReplyAS* replyAS, uint8_t** encodedOutput, size_t* encodedLength)
-{
-	errno_t result;
-	uint8_t *encodedTicket, *encodedData;
-	size_t offset, encodedTicketLength, encodedDataLength; 
-
-	/* Input validation */
-	result = checkReplyAS(replyAS);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	if(encodedOutput == NULL || encodedLength == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
-
-	/* Serialize individual fields */
-	result = getEncodedTicket(&replyAS->ticket, &encodedTicket, &encodedTicketLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-	
-	result = getEncodedEncData(&replyAS->encPart, &encodedData, &encodedDataLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL_ENCDATA;
-	}
-
-	/* Copy serialized fields to output */
-	*encodedLength = MESSAGE_CODE_LENGTH + encodedDataLength + encodedTicketLength + sizeof(replyAS->cname);
-	*encodedOutput = (uint8_t*) malloc(*encodedLength);
-	if(*encodedOutput == NULL) {
-		result = INVALID_STATE;
-		goto FAIL_ALLOC;
-	}
-
-	offset = 0;
-	*(*encodedOutput + offset) = REPLY_AS_CODE;
-	offset += MESSAGE_CODE_LENGTH;
-	memcpy(*encodedOutput + offset, replyAS->cname, sizeof(replyAS->cname));
-	offset += sizeof(replyAS->cname);
-	memcpy(*encodedOutput + offset, encodedTicket, encodedTicketLength);
-	offset += encodedTicketLength;
-	memcpy(*encodedOutput + offset, encodedData, encodedDataLength);
-	offset += encodedDataLength;
-
-FAIL_ALLOC:
-	result |= memset_s(encodedData, encodedDataLength, 0, encodedDataLength);
-	free(encodedData);
-FAIL_ENCDATA:
-	result |= memset_s(encodedTicket, encodedTicketLength, 0, encodedTicketLength);
-	free(encodedTicket);
-FAIL:
-	return result;	
-
-}
+#include "ma_comm_error_codes.h"
+#include "logger/logger.h"
 
 /* Generates ReplyAS from encoded input */
-errno_t setEncodedReplyAS(ReplyAS* replyAS, uint8_t* encodedInput, size_t encodedLength, size_t* offset)
-{
-	errno_t result;
-	size_t encodedOffset, length;
+uint8_t setEncodedReplyAS(ReplyAS* replyAS,
+						  uint8_t* encodedInput,
+						  size_t encodedLength,
+						  size_t* offset) {
+	uint8_t result = MA_COMM_SUCCESS;
+	size_t encodedOffset = 0;
+	size_t length = 0;
 
 	/* Input validation */
-	if(replyAS == NULL || encodedInput == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if(!replyAS || !encodedInput) {
+		LOG("Invalid parameter\n");
+		return MA_COMM_INVALID_PARAMETER;
 	}
 	
 	/* Check if encodedInput has at least enough bytes to encoded 2 principal names */
 	if(encodedLength < 2 * PRINCIPAL_NAME_LENGTH) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+		LOG("Invalid size\n");
+		return MA_COMM_INVALID_PARAMETER;
+	}
+
+	result = initReplyAS(replyAS);
+	if (result != MA_COMM_SUCCESS) {
+		LOG("Init failed\n");
+		return MA_COMM_INVALID_STATE;
 	}
 	
-	/* Unserialization */
+	// Unserialization
+
+	// message code
 	encodedOffset = 0;
 	if(*encodedInput != REPLY_AS_CODE) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+		return INVALID_PARAMETER;
 	}
 	encodedOffset += MESSAGE_CODE_LENGTH;
-	memcpy(replyAS, encodedInput + encodedOffset, sizeof(replyAS->cname));
+
+	// cname
+	memcpy(replyAS->cname, encodedInput + encodedOffset, sizeof(replyAS->cname));
 	encodedOffset += sizeof(replyAS->cname);
 
+	// ticket
 	result = setEncodedTicket(&replyAS->ticket, encodedInput + encodedOffset, encodedLength - encodedOffset, &length);
-	encodedOffset += length;
-	if(result != SUCCESSFULL_OPERATION || encodedOffset > encodedLength) {
-		goto FAIL;
+	if(result != MA_COMM_SUCCESS) {
+		LOG("Fail to deserialize ticket\n");
+		eraseReplyAS(replyAS);
+		return MA_COMM_INVALID_STATE;
 	}
+	encodedOffset += length;
 
+	// enc part
 	result = setEncodedEncData(&replyAS->encPart, encodedInput + encodedOffset,  encodedLength - encodedOffset, &length);
-	encodedOffset += length;
-	if(result != SUCCESSFULL_OPERATION || encodedOffset > encodedLength) {
-		goto FAIL;
+	if(result != MA_COMM_SUCCESS) {
+		LOG("Fail to deserialize enc data\n");
+		eraseReplyAS(replyAS);
+		return MA_COMM_INVALID_STATE;
 	}
+	encodedOffset += length;
 
 	*offset = encodedOffset;
 
-FAIL:
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-errno_t decodeReplyAS(ReplyAS* replyAS, uint8_t** cname, size_t* cnameLength, Ticket* ticket, EncryptedData* encPart)
-{
-	errno_t result;
+uint8_t eraseReplyAS(ReplyAS* replyAS) {
 
-	/* Input validation */
-	result = checkReplyAS(replyAS);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if(!replyAS) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	if(cname == NULL || cnameLength == NULL || ticket == NULL || encPart == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
+	memset_s(replyAS->cname, PRINCIPAL_NAME_LENGTH, 0, PRINCIPAL_NAME_LENGTH);
 
-	
-	/* Copy individual fields */
-	*cname = (uint8_t*) malloc(sizeof(replyAS->cname));
-	if(*cname == NULL) {
-		result = INVALID_STATE;
-		goto FAIL;
-	}
-	*cnameLength = PRINCIPAL_NAME_LENGTH;
-	memcpy(*cname, replyAS->cname, sizeof(replyAS->cname));	
-	
-	result = copyTicket(&replyAS->ticket, ticket);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL_TICKET;
-	}
+	eraseTicket(&replyAS->ticket);
+	eraseEncData(&replyAS->encPart);
 
-	result = copyEncData(&replyAS->encPart, encPart);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL_ENCDATA;
-	}
-	goto SUCCESS;
-FAIL_ENCDATA:
-FAIL_TICKET:
-	result |= memset_s(cname, sizeof(replyAS->cname), 0, sizeof(replyAS->cname));
-	free(*cname);
-FAIL:
-SUCCESS:
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-errno_t checkReplyAS(ReplyAS* replyAs) 
-{
-	errno_t result;
+uint8_t initReplyAS(ReplyAS* replyAS) {
+	uint8_t result = MA_COMM_SUCCESS;
 
-	/* Input validation */
-	if(replyAs == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if (!replyAS) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	/* Check if ticket data is valid */
-        result = checkTicket(&replyAs->ticket);
-        if(result != SUCCESSFULL_OPERATION) {
-       		result = INVALID_PARAMETER;
-        	goto FAIL;
-        }
-                                                 
-        /* Check if encrypted data is valid */
-        result = checkEncData(&replyAs->encPart);
-        if(result != SUCCESSFULL_OPERATION) {
-        	result = INVALID_PARAMETER;
-        	goto FAIL;
-        }
+	memset(replyAS->cname, 0, PRINCIPAL_NAME_LENGTH);
 
-FAIL:
-	return result;
+	result = initTicket(&replyAS->ticket);
+	if (result != MA_COMM_SUCCESS) {
+		return result;
+	}
+
+	result = initEncryptedData(&replyAS->encPart);
+	if (result != MA_COMM_SUCCESS) {
+		return result;
+	}
+
+	return MA_COMM_SUCCESS;
 }
 
-
-errno_t eraseReplyAS(ReplyAS* replyAS)
-{
-	errno_t result;
-
-	result = checkReplyAS(replyAS);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+void dumpReplyAS(ReplyAS* replyAS, uint8_t indent) {
+	if ( (!replyAS) || (!logger_is_log_enabled()) ) {
+		return;
 	}
 
-	/* Secure erase */
-	result = memset_s(replyAS->cname, sizeof(uint8_t) * PRINCIPAL_NAME_LENGTH, 0, sizeof(uint8_t) * PRINCIPAL_NAME_LENGTH);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	uint8_t i = 0;
+	LOG("%*sreplyAS:\n", indent, "");
+	LOG("%*scname: ", indent + 1, "");
+	for(i = 0; i < PRINCIPAL_NAME_LENGTH; ++i) {
+	    LOG("%02x", replyAS->cname[i]);
 	}
-
-	result = eraseTicket(&replyAS->ticket);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-	result = eraseEncData(&replyAS->encPart);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-
-FAIL:
-	return result;
+	LOG("\n");
+	dumpTicket(&replyAS->ticket, indent + 1);
+	dumpEncryptedData(&replyAS->encPart, indent + 1);
 }

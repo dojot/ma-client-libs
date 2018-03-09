@@ -1,5 +1,8 @@
 #include "sessionKey.h"
 
+#include "ma_comm_error_codes.h"
+#include "logger/logger.h"
+
 errno_t encodeSessionKeys(SessionKeys* sessionKeys, uint8_t* keyCS, uint8_t* ivCS, uint8_t* keySC, uint8_t* ivSC, uint8_t keyLength, uint8_t ivLength)
 {
 	errno_t result;
@@ -250,56 +253,54 @@ FAIL:
 	return result;
 }
 
-errno_t eraseSessionKeys(SessionKeys* sessionKeys)
-{
+uint8_t eraseSessionKeys(SessionKeys* sessionKeys) {
 	errno_t result;
 
-	/* Input validation */
-	result = checkSessionKeys(sessionKeys);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	// Input validation
+	if(!sessionKeys) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
 	/* Secure erase key and ivs */
-	result = memset_s(sessionKeys->ivCS, sizeof(uint8_t) * sessionKeys->ivLength, 0, sizeof(uint8_t) * sessionKeys->ivLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if (sessionKeys->ivCS) {
+		memset_s(sessionKeys->ivCS, sessionKeys->ivLength, 0, sessionKeys->ivLength);
+		free(sessionKeys->ivCS);
+		sessionKeys->ivCS = NULL;
 	}
 
-	result = memset_s(sessionKeys->ivSC, sizeof(uint8_t) * sessionKeys->ivLength, 0, sizeof(uint8_t) * sessionKeys->ivLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if (sessionKeys->ivSC) {
+		memset_s(sessionKeys->ivSC, sessionKeys->ivLength, 0, sessionKeys->ivLength);
+		free(sessionKeys->ivSC);
+		sessionKeys->ivSC = NULL;
 	}
 
-	result = memset_s(sessionKeys->keyCS, sizeof(uint8_t) * sessionKeys->keyLength, 0, sizeof(uint8_t) * sessionKeys->keyLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	sessionKeys->ivLength = 0;
+
+	if (sessionKeys->keyCS) {
+		memset_s(sessionKeys->keyCS, sessionKeys->keyLength, 0, sessionKeys->keyLength);
+		free(sessionKeys->keyCS);
+		sessionKeys->keyCS = NULL;
 	}
 
-	result = memset_s(sessionKeys->keySC, sizeof(uint8_t) * sessionKeys->keyLength, 0, sizeof(uint8_t) * sessionKeys->keyLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if (sessionKeys->keySC) {
+		memset_s(sessionKeys->keySC, sessionKeys->keyLength, 0, sessionKeys->keyLength);
+		free(sessionKeys->keySC);
+		sessionKeys->keySC = NULL;
 	}
 
-	result = memset_s(sessionKeys, sizeof(SessionKeys), 0, sizeof(SessionKeys));
-FAIL:
-	return result;
+	sessionKeys->keyLength = 0;
+
+
+	return MA_COMM_SUCCESS;
 }
 
-errno_t copySessionKeys(SessionKeys* src, SessionKeys* dst)
-{
-	errno_t result;
+uint8_t copySessionKeys(SessionKeys* src, SessionKeys* dst) {
 
-	/* Input validation */
-	result = checkSessionKeys(src);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if(!dst || !src) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	if(dst == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
-	}
+	initSessionKeys(dst);
 
 	dst->keyLength = src->keyLength;
 	dst->ivLength = src->ivLength;
@@ -307,21 +308,63 @@ errno_t copySessionKeys(SessionKeys* src, SessionKeys* dst)
 	dst->keySC = (uint8_t*) malloc(sizeof(uint8_t) * src->keyLength); 
 	dst->ivCS = (uint8_t*) malloc(sizeof(uint8_t) * src->ivLength); 
 	dst->ivSC = (uint8_t*) malloc(sizeof(uint8_t) * src->ivLength); 
-	if(dst->keyCS == NULL || dst->keySC == NULL || dst->ivCS == NULL || dst->ivSC == NULL) {
-		/* It only makes sense to free variable if some of them is NULL */
-		free(dst->keyCS);
-		free(dst->keySC);
-		free(dst->ivCS);
-		free(dst->ivSC);
-		result = INVALID_STATE;
-		goto FAIL;
+	if(!dst->keyCS || !dst->keySC || !dst->ivCS || !dst->ivSC) {
+		eraseSessionKeys(dst);
+		return MA_COMM_INVALID_STATE;
 	}
 
-	/* Copy individual fields */
-	memcpy(dst->keyCS, src->keyCS, sizeof(uint8_t) * src->keyLength);
-	memcpy(dst->keySC, src->keySC, sizeof(uint8_t) * src->keyLength);
-	memcpy(dst->ivCS, src->ivCS, sizeof(uint8_t) * src->ivLength);
-	memcpy(dst->ivSC, src->ivSC, sizeof(uint8_t) * src->ivLength);
-FAIL:
-	return result;
+	// Copy individual fields
+	memcpy(dst->keyCS, src->keyCS, src->keyLength);
+	memcpy(dst->keySC, src->keySC, src->keyLength);
+	memcpy(dst->ivCS, src->ivCS, src->ivLength);
+	memcpy(dst->ivSC, src->ivSC, src->ivLength);
+
+	return MA_COMM_SUCCESS;
+}
+
+uint8_t initSessionKeys(SessionKeys* sessionKeys) {
+
+	if (!sessionKeys) {
+		return MA_COMM_INVALID_PARAMETER;
+	}
+
+	sessionKeys->ivLength = 0;
+	sessionKeys->keyLength = 0;
+	sessionKeys->ivCS = NULL;
+	sessionKeys->ivSC = NULL;
+	sessionKeys->keyCS = NULL;
+	sessionKeys->keySC = NULL;
+
+	return MA_COMM_SUCCESS;
+}
+
+void dumpSessionKeys(SessionKeys* sessionKeys, uint8_t indent) {
+	if ( (!sessionKeys) || (!logger_is_log_enabled()) ) {
+		return;
+	}
+
+	uint8_t i = 0;
+	LOG("%*sSessionKeys:\n", indent, "");
+	LOG("%*sivLength: %u\n", indent + 1, "", sessionKeys->ivLength);
+	LOG("%*sivCS: ", indent + 1, "");
+	for(i = 0; i < sessionKeys->ivLength; ++i) {
+	    LOG("%02x", sessionKeys->ivCS[i]);
+	}
+	LOG("\n");
+	LOG("%*sivSC: ", indent + 1, "");
+	for(i = 0; i < sessionKeys->ivLength; ++i) {
+	    LOG("%02x", sessionKeys->ivSC[i]);
+	}
+	LOG("\n");
+	LOG("%*skeyLength: %u\n", indent + 1, "", sessionKeys->keyLength);
+	LOG("%*skeyCS: ", indent + 1, "");
+	for(i = 0; i < sessionKeys->keyLength; ++i) {
+	    LOG("%02x", sessionKeys->keyCS[i]);
+	}
+	LOG("\n");
+	LOG("%*skeySC: ", indent + 1, "");
+	for(i = 0; i < sessionKeys->keyLength; ++i) {
+	    LOG("%02x", sessionKeys->keySC[i]);
+	}
+	LOG("\n");
 }

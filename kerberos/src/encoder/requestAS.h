@@ -2,7 +2,6 @@
 #define REQUEST_AS_
 
 #include "constants.h"
-#include "errno.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -19,15 +18,24 @@ typedef struct {
 	uint8_t nonce[NONCE_LENGTH];
 } RequestAS;
 
-errno_t encodeRequestAS(RequestAS* /* requestAs */, uint8_t* /* cname */, size_t /* cnameLength */, uint8_t* /* sname */, size_t /* snameLength */, uint8_t* /* nonce */, size_t /* nonceLength */);
+/* Fills the request */
+uint8_t encodeRequestAS(RequestAS* requestAs,
+						uint8_t* cname,
+						size_t cnameLength,
+						uint8_t* sname,
+						size_t snameLength,
+						uint8_t* nonce,
+						size_t nonceLength);
 
-errno_t getEncodedRequestAS(RequestAS* /* requestAS */, uint8_t ** /* encodedOutput */, size_t* /* encodedLength */);
+/* Generate byte array encodedOutput from requestAS */
+uint8_t getEncodedRequestAS(RequestAS* requestAS,
+							uint8_t** encodedOutput,
+							size_t* encodedLength);
 
-errno_t setEncodedRequestAS(RequestAS* /* requestAS */, uint8_t* /* encodedInput */, size_t /* encodedLength*/, size_t* /* offset */);
+uint8_t initRequestAS(RequestAS* requestAs);
 
-errno_t decodeRequestAS(RequestAS* /* requestAs */, uint8_t** /* cname */, size_t* /* cnameLength */, uint8_t** /* sname */, size_t* /* snameLength */, uint8_t** /* nonce */, size_t* /* nonceLength */);
+uint8_t eraseRequestAS(RequestAS* requestAs);
 
-errno_t checkRequestAS(RequestAS* /* requestAs */);
+void dumpRequestAS(RequestAS *requestAs, uint8_t indent);
 
-errno_t eraseRequestAS(RequestAS* /* requestAs */);
 #endif /* REQUEST_AS_ */

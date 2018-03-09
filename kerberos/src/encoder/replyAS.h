@@ -17,15 +17,14 @@ typedef struct {
 	EncryptedData encPart;
 } ReplyAS;
 
-errno_t encodeReplyAS(ReplyAS* /* replyAS */, uint8_t* /* cname */, size_t /* cnameLength */, Ticket* /* ticket */, EncryptedData* /* encPart */);
+uint8_t setEncodedReplyAS(ReplyAS* replyAS,
+						  uint8_t* encodedInput,
+						  size_t encodedLength,
+						  size_t* offset);
 
-errno_t getEncodedReplyAS(ReplyAS* /* replyAS */, uint8_t** /* encodedOutput */, size_t* /* encodedLength */);
+uint8_t initReplyAS(ReplyAS* replyAS);
 
-errno_t setEncodedReplyAS(ReplyAS* /* replyAS */, uint8_t* /* encodedInput */, size_t /* encodedLength */, size_t* /* offset */);
+uint8_t eraseReplyAS(ReplyAS* replyAS);
 
-errno_t decodeReplyAS(ReplyAS* /* replyAS */, uint8_t** /* cname */, size_t* /* cnameLength */, Ticket* /* ticket */, EncryptedData* /* encPart */);
-
-errno_t checkReplyAS(ReplyAS* /* replyAS */);
-
-errno_t eraseReplyAS(ReplyAS* /* replyAS */);
+void dumpReplyAS(ReplyAS* replyAS, uint8_t indent);
 #endif /* REPLY_AS_ */

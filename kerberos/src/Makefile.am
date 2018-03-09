@@ -5,6 +5,7 @@ lib_LTLIBRARIES=lib@PACKAGE_NAME@-@PACKAGE_VERSION@.la
 
 lib@PACKAGE_NAME@_@PACKAGE_VERSION@_la_SOURCES=\
 crypto/aes.c \
+logger/logger.c \
 crypto/CryptoKerberos.c \
 encoder/authenticator.c \
 encoder/encKdcRepPart.c \
@@ -20,7 +21,8 @@ encoder/ticket.c \
 protocol/communication.c \
 protocol/protocol.c \
 protocol/secure-util.c \
-protocol/utils.c
+protocol/utils.c \
+ma_communication.c
 
-nobase_lib@PACKAGE_NAME@_@PACKAGE_VERSION@_la_include_HEADERS=
-
+nobase_lib@PACKAGE_NAME@_@PACKAGE_VERSION@_la_include_HEADERS=\
+ma_communication.h

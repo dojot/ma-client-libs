@@ -14,13 +14,25 @@ errno_t encodeTicket(Ticket* /* ticket */, uint8_t* /* sname */, size_t /* sname
 
 errno_t getEncodedTicket(Ticket* /* ticket */, uint8_t** /* encodedOutput */, size_t* /* encodedLength */);
 
-errno_t setEncodedTicket(Ticket* /* ticket */, uint8_t* /* encodedOutput */, size_t /* encodedLength */, size_t* /* offset */);
+uint8_t setEncodedTicket(Ticket* /* ticket */, uint8_t* /* encodedOutput */, size_t /* encodedLength */, size_t* /* offset */);
 
 errno_t decodeTicket(Ticket* /* ticket */, uint8_t** /* sname */, size_t* /* snameLength */, EncryptedData* /* encData */);
  
-errno_t checkTicket(Ticket* /* ticket */);
+uint8_t checkTicket(Ticket* /* ticket */);
 
-errno_t eraseTicket(Ticket* /* ticket */);
+uint8_t getEncodedTicketOnBuffer(Ticket* ticket,
+								 size_t bufferLength,
+								 uint8_t* buffer,
+								 size_t* offset);
 
-errno_t copyTicket(Ticket* /* src */, Ticket* /* dst */);
+uint8_t getEncodedLengthTicket(Ticket* ticket, size_t* length);
+
+uint8_t eraseTicket(Ticket*  ticket);
+
+uint8_t copyTicket(Ticket* src, Ticket* dst);
+
+uint8_t initTicket(Ticket *ticket);
+
+void dumpTicket(Ticket *ticket, uint8_t indent);
+
 #endif /* TICKET_H_ */

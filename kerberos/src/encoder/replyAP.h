@@ -16,6 +16,8 @@ errno_t getEncodedReplyAP(ReplyAP* /* replyAp */, uint8_t** /* encodedOutput */,
 errno_t setEncodedReplyAP(ReplyAP* /* replyAp */, uint8_t* /* encodedInput */,  size_t /* encodedLength */, size_t* /* offset */);
 errno_t decodeReplyAP(ReplyAP* /* replyAp */, EncryptedData* /* encData */);
 errno_t checkReplyAP(ReplyAP* /* replyAp */);
-errno_t eraseReplyAP(ReplyAP* /* replyAp */);
+
+uint8_t initReplyAP(ReplyAP* replyAp);
+uint8_t eraseReplyAP(ReplyAP* replyAp);
 
 #endif /* REPLY_AP_ */
