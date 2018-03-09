@@ -8,7 +8,7 @@
 #define REPLY_AP_CODE 0x0f
 
 typedef struct {
-	EncryptedData encData;
+    EncryptedData encData;
 } ReplyAP;
 
 errno_t encodeReplyAP(ReplyAP* /* replyAp */, EncryptedData* /* encData */);

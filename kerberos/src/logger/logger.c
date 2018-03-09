@@ -8,15 +8,15 @@
 static uint8_t isLogEnabled = 0;
 
 void logger_enable() {
-	isLogEnabled = 1;
+    isLogEnabled = 1;
 }
 
 void logger_disable() {
-	isLogEnabled = 0;
+    isLogEnabled = 0;
 }
 
 uint8_t logger_is_log_enabled() {
-	return isLogEnabled;
+    return isLogEnabled;
 }
 
 void logger_write_message(const char* data, ...) {
@@ -32,23 +32,23 @@ void logger_write_message(const char* data, ...) {
         return;
     }
 
-	// add log message
-	va_start(list, data);
+    // add log message
+    va_start(list, data);
 
-	// variable list to string
-	length = vsnprintf(buffer, MAX_LOG_SIZE, data, list);
+    // variable list to string
+    length = vsnprintf(buffer, MAX_LOG_SIZE, data, list);
 
-	// check buffer length
-	if (length > MAX_LOG_SIZE) {
-		overflow = 1;
-	}
+    // check buffer length
+    if (length > MAX_LOG_SIZE) {
+        overflow = 1;
+    }
 
-	va_end(list);
+    va_end(list);
 
-	// print
+    // print
     printf("%s", buffer);
     if (overflow) {
-    	printf("[CRITICAL] Logger buffer overflow.");
+        printf("[CRITICAL] Logger buffer overflow.");
     }
 
 }

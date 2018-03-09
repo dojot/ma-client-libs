@@ -9,18 +9,18 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define REPLY_AS_CODE	0x0B
+#define REPLY_AS_CODE    0x0B
 
 typedef struct {
-	uint8_t cname[PRINCIPAL_NAME_LENGTH];
-	Ticket ticket;
-	EncryptedData encPart;
+    uint8_t cname[PRINCIPAL_NAME_LENGTH];
+    Ticket ticket;
+    EncryptedData encPart;
 } ReplyAS;
 
 uint8_t setEncodedReplyAS(ReplyAS* replyAS,
-						  uint8_t* encodedInput,
-						  size_t encodedLength,
-						  size_t* offset);
+                          uint8_t* encodedInput,
+                          size_t encodedLength,
+                          size_t* offset);
 
 uint8_t initReplyAS(ReplyAS* replyAS);
 

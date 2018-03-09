@@ -15,27 +15,27 @@ typedef struct {
 } EncTicketPart;
 
 errno_t encodeEncTicketPart(EncTicketPart* encTicketPart,
-							SessionKeys* sk,
-							uint8_t* cname,
-							size_t cnameLength,
-							uint64_t authtime,
-							uint64_t endtime);
+                            SessionKeys* sk,
+                            uint8_t* cname,
+                            size_t cnameLength,
+                            uint64_t authtime,
+                            uint64_t endtime);
 
 errno_t getEncodedEncTicketPart(EncTicketPart* encTicketPart,
-								uint8_t** encodedOutput,
-								size_t* encodedLength);
+                                uint8_t** encodedOutput,
+                                size_t* encodedLength);
 
 errno_t setEncodedEncTicketPart(EncTicketPart* encTicketPart,
-								uint8_t* encodedInput,
-								size_t encodedLength,
-								size_t* offset);
+                                uint8_t* encodedInput,
+                                size_t encodedLength,
+                                size_t* offset);
 
 errno_t decodeEncTicketPart(EncTicketPart* encTicketPart,
-							SessionKeys* sk,
-							uint8_t** cname,
-							uint8_t* cnameLength,
-							uint64_t* authtime,
-							uint64_t* endtime);
+                            SessionKeys* sk,
+                            uint8_t** cname,
+                            uint8_t* cnameLength,
+                            uint64_t* authtime,
+                            uint64_t* endtime);
 
 errno_t checkEncTicketPart(EncTicketPart* encTicketPart);
 

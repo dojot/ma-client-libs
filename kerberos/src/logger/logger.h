@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define MAX_LOG_SIZE	1024
+#define MAX_LOG_SIZE    1024
 
 #define LOG(ARGS...) \
 do { \

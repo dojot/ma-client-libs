@@ -5,11 +5,11 @@
 #include "constants.h"
 #include "ticket.h"
 
-#define REQUEST_AP_CODE	0x0e
+#define REQUEST_AP_CODE    0x0e
 
 typedef struct {
-	Ticket ticket;
-	EncryptedData encryptedData;
+    Ticket ticket;
+    EncryptedData encryptedData;
 } RequestAP;
 
 errno_t encodeRequestAP(RequestAP* /* requestAp */, Ticket* /* ticket */, EncryptedData* /* encryptedData */);
