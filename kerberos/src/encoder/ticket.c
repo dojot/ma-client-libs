@@ -1,5 +1,9 @@
 #include "ticket.h"
 #include <stdio.h>
+
+#include "ma_comm_error_codes.h"
+#include "logger/logger.h"
+
 errno_t encodeTicket(Ticket* ticket, uint8_t* sname, size_t snameLength, EncryptedData* encData)
 {
 	errno_t result;
@@ -42,86 +46,94 @@ FAIL:
 
 }
 
-errno_t getEncodedTicket(Ticket* ticket, uint8_t** encodedOutput, size_t* encodedLength)
-{
-	errno_t result;
-	size_t encDataLength, offset;
-	uint8_t *encodedEncData;	
+uint8_t getEncodedTicketOnBuffer(Ticket* ticket,
+								 size_t bufferLength,
+								 uint8_t* buffer,
+								 size_t* offset) {
+	uint8_t result = MA_COMM_SUCCESS;
+	size_t encDataOffset = 0;
 
-	/* Input validation */
+	// Input validation
+	if ( (!buffer) || (!offset) ) {
+		return MA_COMM_INVALID_PARAMETER;
+	}
 	result = checkTicket(ticket);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if(result != MA_COMM_SUCCESS) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	if(encodedOutput == NULL || encodedLength == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	//buffer size validation
+	size_t encodedLength = 0;
+	result = getEncodedLengthTicket(ticket, &encodedLength);
+	if(result != MA_COMM_SUCCESS) {
+		return MA_COMM_INVALID_PARAMETER;
+	}
+	if (encodedLength > bufferLength) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	/* Serializes data to encodedOutput */
 
-	/* Get serialiazed version of encrypted data field */
-	result = getEncodedEncData(&ticket->encData, &encodedEncData, &encDataLength);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	// Serializes data to encodedOutput
+	*offset = 0;
+	memcpy(buffer + *offset, ticket->sname, sizeof(ticket->sname));
+	*offset += sizeof(ticket->sname);
+
+	// Get serialiazed version of encrypted data field
+	result = getEncodedEncDataOnBuffer(&ticket->encData,
+									   bufferLength - *offset,
+									   buffer + *offset,
+									   &encDataOffset);
+	if(result != MA_COMM_SUCCESS) {
+		*offset = 0;
+		return result;
 	}
+	*offset += encDataOffset;
 
-	/* Allocate space to encoded output */
-	*encodedOutput = (uint8_t*) malloc(encDataLength + PRINCIPAL_NAME_LENGTH);
-        if(*encodedOutput == NULL) {
-                result = INVALID_STATE;
-                goto FAIL;
-        }
-		
-	offset = 0;
-	memcpy(*encodedOutput + offset, ticket->sname, sizeof(ticket->sname));
-	offset += sizeof(ticket->sname);	
-	memcpy(*encodedOutput + offset, encodedEncData, encDataLength);
-	offset += encDataLength; 
-	*encodedLength = offset;
-
-FAIL:
-	result |= memset_s(encodedEncData, encDataLength, 0, encDataLength);
-	free(encodedEncData);
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-errno_t setEncodedTicket(Ticket* ticket, uint8_t* encodedInput, size_t encodedLength, size_t* offset)
-{
-	errno_t result;
-	size_t encodedOffset, encodedDataLength;
+uint8_t setEncodedTicket(Ticket* ticket,
+						 uint8_t* encodedInput,
+						 size_t encodedLength,
+						 size_t* offset) {
+	uint8_t result = MA_COMM_SUCCESS;
+	size_t encodedOffset = 0;
+	size_t encodedDataLength = 0;
 
 	/* Input validation */
-	if(ticket == NULL || encodedInput == NULL) {
-		result = INVALID_PARAMETER;
+	if(!ticket || !encodedInput) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
 	/* It must be bigger than PRINCIPAL_NAME because of the existence of Encrypted Data which must not be null*/
 	if(encodedLength <= PRINCIPAL_NAME_LENGTH) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
 	/* Secure remove of any previous information */
-	result = memset_s(ticket, sizeof(Ticket), 0, sizeof(Ticket));
-        if(result != SUCCESSFULL_OPERATION) {
-                goto FAIL;
-        }
+	result = initTicket(ticket);
+	if (result != MA_COMM_SUCCESS) {
+		return MA_COMM_INVALID_STATE;
+	}
 		
-        /* Unserialization */
+    // Unserialization
 	encodedOffset = 0;
+
+	//sname
 	memcpy(ticket->sname, encodedInput + encodedOffset, sizeof(ticket->sname));
 	encodedOffset += sizeof(ticket->sname);
+
+	//encoded data
 	result = setEncodedEncData(&ticket->encData, encodedInput + encodedOffset, encodedLength - encodedOffset, &encodedDataLength);
-	encodedOffset += encodedDataLength;
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	if(result != MA_COMM_SUCCESS) {
+		eraseTicket(ticket);
+		return MA_COMM_INVALID_STATE;
 	}
+	encodedOffset += encodedDataLength;
+
 	*offset = encodedOffset;
-	result = checkTicket(ticket);
-FAIL:
-	return result;	
+
+	return MA_COMM_SUCCESS;
 }
 
 
@@ -157,67 +169,94 @@ FAIL:
 	return result;	
 }
 
-errno_t checkTicket(Ticket* ticket)
-{
-	errno_t result;
+uint8_t checkTicket(Ticket* ticket) {
 
-	if(ticket == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	uint8_t result = MA_COMM_SUCCESS;
+
+	if(!ticket) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 	result = checkEncData(&ticket->encData);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
 
-FAIL:
 	return result;
 }
 
-errno_t eraseTicket(Ticket* ticket) 
-{
-	errno_t result;
-	
-	/* Input validation */
-	result = checkTicket(ticket);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+uint8_t getEncodedLengthTicket(Ticket* ticket, size_t* length) {
+
+	int8_t result = MA_COMM_SUCCESS;
+
+	if (!ticket || !length) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	result = eraseEncData(&ticket->encData);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	result = getEncodedLengthEncData(&ticket->encData, length);
+	if (result != MA_COMM_SUCCESS) {
+		return MA_COMM_INVALID_STATE;
 	}
+    *length += PRINCIPAL_NAME_LENGTH;
 
-	result = memset_s(ticket, sizeof(Ticket), 0, sizeof(Ticket));	
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
-	}
-FAIL:
-	return result;
+	return MA_COMM_SUCCESS;
 }
 
-errno_t copyTicket(Ticket* src, Ticket *dst)
-{
-		
-	errno_t result;
+uint8_t eraseTicket(Ticket* ticket) {
 	
-	/* Input validation */
-	if(dst == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	// Input validation
+	if(!ticket) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
 
-	result = checkTicket(src);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+	eraseEncData(&ticket->encData);
+
+	memset_s(ticket->sname, sizeof(uint8_t) * PRINCIPAL_NAME_LENGTH, 0, sizeof(uint8_t) *PRINCIPAL_NAME_LENGTH);
+
+	return MA_COMM_SUCCESS;
+}
+
+uint8_t copyTicket(Ticket* src, Ticket *dst) {
+
+	uint8_t result = MA_COMM_SUCCESS;
+	
+	// Input validation
+	if(!dst || !src) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
+	initTicket(dst);
 
 	memcpy(dst->sname, src->sname, sizeof(src->sname));
 	result = copyEncData(&src->encData, &dst->encData);
-	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+
+	return result;
+}
+
+uint8_t initTicket(Ticket *ticket) {
+	uint8_t result = MA_COMM_SUCCESS;
+
+	if (!ticket) {
+		return MA_COMM_INVALID_PARAMETER;
 	}
-FAIL:
-	return result;	
+
+	result = initEncryptedData(&ticket->encData);
+	if (result != MA_COMM_SUCCESS) {
+		return result;
+	}
+
+	memset(ticket->sname, 0 , PRINCIPAL_NAME_LENGTH);
+
+	return MA_COMM_SUCCESS;
+}
+
+void dumpTicket(Ticket *ticket, uint8_t indent) {
+
+	if ( (!ticket) || (!logger_is_log_enabled()) ) {
+		return;
+	}
+
+	uint8_t i = 0;
+	LOG("%*sTicket:\n", indent, "");
+	LOG("%*ssname: ", indent + 1, "");
+	for(i = 0; i < PRINCIPAL_NAME_LENGTH; ++i) {
+	    LOG("%02x", ticket->sname[i]);
+	}
+	LOG("\n");
+	dumpEncryptedData(&ticket->encData, indent + 1);
 }

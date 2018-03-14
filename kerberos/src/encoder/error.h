@@ -38,4 +38,6 @@ errno_t checkError(Error* /* error */);
 
 errno_t eraseError(Error* /* error */);
 
+char* getErrorString(Error error);
+
 #endif /* REQUEST_AS_ */

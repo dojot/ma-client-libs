@@ -23,7 +23,6 @@
 #define NONCE_LENGTH            4
 #define KEY_LENGTH		32
 #define IV_LENGTH		12
-#define TIME_LENGTH		8
 #define MESSAGE_CODE_LENGTH	1
 
 #endif /* CONSTANTS_H */ 

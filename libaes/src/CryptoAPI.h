@@ -1,11 +1,11 @@
 #ifndef CRYPTO_
 #define CRYPTO_
 
-#include "../mode/gcm.h"
-#include "../util/codes.h"
+#include "mode/gcm.h"
+#include "util/codes.h"
 
-#include "../util/cryptoutil.h"
-#include "../symmetric/aes.h"
+#include "util/cryptoutil.h"
+#include "symmetric/aes.h"
 
 /* Using the biggest length possible for the tag */
 #define TAG_LEN 128

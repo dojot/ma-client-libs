@@ -15,19 +15,23 @@ uint8_t keyLength = 0;
 uint8_t ivLength = 0;
 uint8_t tagLength = 0;
 
-errno_t initSecureChannel(uint8_t kLength, uint8_t iLength, uint8_t tLen, uint8_t *kLocal, uint8_t* kExtern, uint8_t* iLocal, uint8_t* iExtern)
-{
+errno_t initSecureChannel(uint8_t kLength,
+						  uint8_t iLength,
+						  uint8_t tLen,
+						  uint8_t* kLocal,
+						  uint8_t* kExtern,
+						  uint8_t* iLocal,
+						  uint8_t* iExtern) {
 	errno_t result;
 	
-	if(kLocal == NULL || kExtern == NULL || iLocal == NULL || iExtern == NULL) {
-		result = INVALID_PARAMETER;
-		goto FAIL;
+	if(!kLocal || !kExtern || !iLocal || !iExtern) {
+		return INVALID_PARAMETER;
 	}
 	
 	/* Clear previous values */
 	result = clearSecureChannel();
 	if(result != SUCCESSFULL_OPERATION) {
-		goto FAIL;
+		return INVALID_STATE;
 	}
 	
 	tagLength = tLen;
@@ -39,41 +43,44 @@ errno_t initSecureChannel(uint8_t kLength, uint8_t iLength, uint8_t tLen, uint8_
 	ivLength = iLength;
 	ivLocal = (uint8_t*) malloc(sizeof(uint8_t) * ivLength);
 	ivExtern = (uint8_t*) malloc(sizeof(uint8_t) * ivLength);
+
+	if ( (!keyLocal) || (!keyExtern) || (!ivLocal) || (!ivExtern) ) {
+		clearSecureChannel();
+		return INVALID_STATE;
+	}
 	
 	memcpy(keyLocal, kLocal, sizeof(uint8_t) * keyLength);	
 	memcpy(keyExtern, kExtern, sizeof(uint8_t) * keyLength);
 	memcpy(ivLocal, iLocal, sizeof(uint8_t) * ivLength);
 	memcpy(ivExtern, iExtern, sizeof(uint8_t) * ivLength);
-FAIL:
-	return result;
+
+	return SUCCESSFULL_OPERATION;
 }
 
-errno_t clearSecureChannel()
-{
-	errno_t result;
+errno_t clearSecureChannel() {
 	
-	if(keyLocal != NULL)
-		result = memset_s(keyLocal, keyLength, 0, keyLength);
-	if(keyExtern != NULL)
-		result |= memset_s(keyExtern, keyLength, 0, keyLength);
-	if(ivLocal != NULL)
-		result |= memset_s(ivLocal, ivLength, 0, ivLength);
-	if(ivExtern != NULL)
-		result |= memset_s(ivExtern, ivLength, 0, ivLength);
-		
-	free(keyLocal);
-	free(keyExtern);
-	free(ivLocal);
-	free(ivExtern);
+	if(keyLocal) {
+		memset_s(keyLocal, keyLength, 0, keyLength);
+		free(keyLocal);
+		keyLocal = NULL;
+	}
+	if(keyExtern) {
+		memset_s(keyExtern, keyLength, 0, keyLength);
+		free(keyExtern);
+		keyExtern = NULL;
+	}
+	if(ivLocal) {
+		memset_s(ivLocal, ivLength, 0, ivLength);
+		free(ivLocal);
+		ivLocal = NULL;
+	}
+	if(ivExtern) {
+		memset_s(ivExtern, ivLength, 0, ivLength);
+		free(ivExtern);
+		ivExtern = NULL;
+	}
 	
-	keyLength = 0;
-	ivLength = 0;
-	keyLocal = NULL;
-	keyExtern = NULL;
-	ivLocal = NULL;
-	ivExtern = NULL;
-	
-	return result;
+	return SUCCESSFULL_OPERATION;
 }
 
 errno_t initChannel()
@@ -305,7 +312,7 @@ errno_t decryptTo(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint32_
 	*plaintext = output;
 	*plaintextLength = outputOffset;
 	/* Initializes the server to client channel */
-	inc(ivExtern, ivLength);
+	//inc(ivExtern, ivLength);
 	goto SUCCESS;
 
 FAIL_FREE:
@@ -360,7 +367,7 @@ errno_t decryptToJS(uint8_t* aad, uint32_t aadLength, uint8_t* ciphertext, uint3
 
 	memcpy(plaintext, output, outputOffset);	
 	/* Initializes the server to client channel */
-	inc(ivExtern, ivLength);
+	//inc(ivExtern, ivLength);
 	goto SUCCESS;
 
 FAIL_FREE:
