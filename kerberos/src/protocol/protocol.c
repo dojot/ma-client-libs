@@ -369,6 +369,27 @@ uint8_t kerberos_protocol_is_mutual_authenticated(void* pContext) {
     return MA_COMM_TRUE;
 }
 
+uint8_t kerberos_protocol_get_session_id(void* pContext,
+                                         size_t sessionIdSize,
+                                         uint8_t* sessionId) {
+    KerberosContext *pKerberosContext = NULL;
+
+    if (!pContext) {
+        LOG("invalid kerberos context\n");
+        return MA_COMM_FALSE;
+    }
+    pKerberosContext = (KerberosContext*) pContext;
+
+    if (sessionIdSize != SESSION_ID_LENGTH) {
+        LOG("invalid session id size\n");
+        return MA_COMM_INVALID_PARAMETER;
+    }
+
+    memcpy(sessionId, pKerberosContext->sessionId, SESSION_ID_LENGTH);
+
+    return MA_COMM_SUCCESS;
+}
+
 uint8_t processState(KerberosContext *pContext,
                       uint8_t* encodedInput,
                       size_t encodedInputLength) {
@@ -377,6 +398,8 @@ uint8_t processState(KerberosContext *pContext,
     size_t encodedOutputLength = 0;
     uint8_t* pResponse = NULL;
     size_t responseSize = 0;
+    uint32_t httpStatusCode = 0;
+    struct curl_slist *pSlist = NULL;
 
     LOG("Processing state: %s\n", protocolStateToString(pContext->state));
 
@@ -393,11 +416,13 @@ uint8_t processState(KerberosContext *pContext,
             }
             goNextState(pContext);
             LOG("Sending requestAS\n");
+            pSlist = curl_slist_append(pSlist, "Content-Type: application/x-www-form-urlencoded");
             result = send_message(pContext->urlRequestAS,
-                                  NULL,
-                                  0,
+                                  "POST",
+                                  &pSlist,
                                   encodedOutput,
                                   encodedOutputLength,
+                                  &httpStatusCode,
                                   &pResponse,
                                   &responseSize);
             free(encodedOutput);
@@ -433,12 +458,14 @@ uint8_t processState(KerberosContext *pContext,
                 break;
             }
             goNextState(pContext);
+            pSlist = curl_slist_append(pSlist, "Content-Type: application/x-www-form-urlencoded");
             LOG("Sending requestAP\n");
             result = send_message(pContext->urlRequestAP,
-                                  NULL,
-                                  0,
+                                  "POST",
+                                  &pSlist,
                                   encodedOutput,
                                   encodedOutputLength,
+                                  &httpStatusCode,
                                   &pResponse,
                                   &responseSize);
             free(encodedOutput);
