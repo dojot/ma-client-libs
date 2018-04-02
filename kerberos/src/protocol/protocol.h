@@ -26,5 +26,9 @@ uint8_t kerberos_protocol_execute_handshake(void* pContext);
 
 uint8_t kerberos_protocol_is_mutual_authenticated(void* pContext);
 
+uint8_t kerberos_protocol_get_session_id(void* pContext,
+                                         size_t sessionIdSize,
+                                         uint8_t* sessionId);
+
 
 #endif /* KERBEROS_PROTOCOL_ */
